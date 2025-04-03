@@ -1,0 +1,22 @@
+{
+  "name": "server",
+  "scripts": {
+    "run": "tsx ./main.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.23.0",
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.14.0",
+    "eslint": "^9.23.0",
+    "globals": "^16.0.0",
+    "prettier": "3.5.3",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.29.0"
+  },
+  "dependencies": {
+    "@types/ws": "^8.18.1",
+    "express": "^5.1.0",
+    "ws": "^8.18.1"
+  }
+}
