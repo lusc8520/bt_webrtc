@@ -1,6 +1,7 @@
 import { WebSocketServer } from "ws";
 import express from "express";
-import { Client, ClientMessage } from "./types";
+import { Client } from "./types";
+import { ClientMessage } from "../contract/sharedTypes";
 
 // boilerplate for setting up http server with websocket server ...
 const expressApp = express();
@@ -32,7 +33,7 @@ websocketServer.on("connection", (websocket) => {
       const message = JSON.parse(event.data as string) as ClientMessage;
       connectedClients
         .get(message.clientId)
-        ?.sendMessage({ ...message, clientId: clientId });
+        ?.sendMessage({ ...message, clientId: client.id });
     } catch {
       websocket.close();
     }

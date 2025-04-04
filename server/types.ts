@@ -1,4 +1,5 @@
 import { WebSocket } from "ws";
+import { ServerMessage } from "../contract/sharedTypes";
 
 export class Client {
   id: number;
@@ -13,17 +14,3 @@ export class Client {
     this.websocket.send(JSON.stringify(message));
   }
 }
-
-export type ServerMessage = ClientMessage | { pType: "joined"; ids: number[] };
-
-export type ClientMessage = BaseMessage & { clientId: number };
-
-type BaseMessage =
-  | {
-      pType: "sdp";
-      sdp: RTCSessionDescriptionInit;
-    }
-  | {
-      pType: "ice";
-      ice: RTCIceCandidateInit;
-    };
