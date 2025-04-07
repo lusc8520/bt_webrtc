@@ -4,26 +4,41 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { ClientMessage, ServerMessage } from "../../../contract/sharedTypes.ts";
-import { RemoteRTCPeer } from "../peerConnection/RemoteRTCPeer.ts";
+import { RemoteRTCPeer } from "../peer_connection/RemoteRTCPeer.ts";
 import { RTCMessage, SendType } from "../types.ts";
 
 type Data = {
-  status: number;
+  broadCast: (sendType: SendType, message: RTCMessage) => void;
+  subscribeMessage: (func: MessageListener) => void;
 };
 
+type MessageListener = (peerId: number, message: RTCMessage) => void;
+
 const wsUrl = "ws://localhost:8080";
-const AppContext = createContext<Data>({ status: 0 });
+const AppContext = createContext<Data>({
+  broadCast: () => {},
+  subscribeMessage: () => {},
+});
 
 export function AppContextProvider({ children }: { children: ReactNode }) {
-  const [signalingServer, setSignalingServer] = useState<WebSocket | null>(
-    null,
+  const [signalingServer, setSignalingServer] = useState<WebSocket | undefined>(
+    undefined,
   );
+  const messageListeners = useRef<MessageListener[]>([]);
   const [peerConnections, setPeerConnections] = useState<
     Map<number, RemoteRTCPeer>
   >(new Map());
+  const [connectedPeers, setConnectedPeers] = useState<
+    Map<number, RemoteRTCPeer>
+  >(new Map());
+
+  const subscribeMessage = useCallback((listener: MessageListener) => {
+    messageListeners.current.push(listener);
+  }, []);
 
   const sendMessage = useCallback(
     (message: ClientMessage) => {
@@ -41,11 +56,11 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
 
   const broadCast = useCallback(
     (sendType: SendType, message: RTCMessage) => {
-      for (const peer of peerConnections.values()) {
+      for (const peer of connectedPeers.values()) {
         peer.sendMessage(sendType, message);
       }
     },
-    [peerConnections],
+    [connectedPeers],
   );
 
   useEffect(() => {
@@ -77,17 +92,30 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
           });
         },
         onopen: () => {
-          console.warn(`connected to ${peerId}`);
+          console.warn(`connected to peer ${peerId}`);
+          setConnectedPeers((prevState) => {
+            const map = new Map(prevState);
+            return map.set(peerId, peerConnection);
+          });
         },
         onclose: () => {
-          console.warn(`disconnected from ${peerId}`);
+          console.warn(`disconnected from peer ${peerId}`);
           setPeerConnections((prevState) => {
             const map = new Map(prevState);
             map.delete(peerId);
             return map;
           });
+          setConnectedPeers((prevState) => {
+            const map = new Map(prevState);
+            map.delete(peerId);
+            return map;
+          });
         },
-        onmessage: (message) => {},
+        onmessage: (message) => {
+          for (const listener of messageListeners.current) {
+            listener(peerId, message);
+          }
+        },
       });
       setPeerConnections((prevState) => {
         const map = new Map(prevState);
@@ -98,23 +126,6 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     [peerConnections, sendMessage],
   );
 
-  function handleIceMessage(peerId: number, ice: RTCIceCandidateInit) {
-    getOrCreatePeerConnection(peerId).addIceCandidate(ice);
-  }
-
-  function handleSdpMessage(peerId: number, sdp: RTCSessionDescriptionInit) {
-    const peer = getOrCreatePeerConnection(peerId);
-    if (sdp.type === "offer") {
-      peer.setRemoteDescription(sdp);
-      peer.createAnswer().then((answer) => {
-        peer.setLocalDescription(answer);
-        sendMessage({ pType: "sdp", clientId: peerId, sdp: answer });
-      });
-    } else if (sdp.type === "answer") {
-      peer.setRemoteDescription(sdp);
-    }
-  }
-
   function handleSignalingMessage(message: ServerMessage) {
     switch (message.pType) {
       case "joined":
@@ -123,11 +134,25 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         }
         break;
       case "ice":
-        handleIceMessage(message.clientId, message.ice);
+        getOrCreatePeerConnection(message.clientId).addIceCandidate(
+          message.ice,
+        );
         break;
-      case "sdp":
-        handleSdpMessage(message.clientId, message.sdp);
+      case "sdp": {
+        const sdp = message.sdp;
+        const peerId = message.clientId;
+        const peer = getOrCreatePeerConnection(peerId);
+        if (sdp.type === "offer") {
+          peer.setRemoteDescription(sdp);
+          peer.createAnswer().then((answer) => {
+            peer.setLocalDescription(answer);
+            sendMessage({ pType: "sdp", clientId: peerId, sdp: answer });
+          });
+        } else if (sdp.type === "answer") {
+          peer.setRemoteDescription(sdp);
+        }
         break;
+      }
     }
   }
 
@@ -136,7 +161,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     setSignalingServer(new WebSocket(wsUrl));
   }, []);
 
-  if (signalingServer != null) {
+  if (signalingServer != undefined) {
     signalingServer.onopen = () => {
       console.warn("connected to signaling server! :)");
     };
@@ -163,7 +188,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AppContext.Provider value={{ status: 0 }}>{children}</AppContext.Provider>
+    <AppContext.Provider value={{ broadCast, subscribeMessage }}>
+      {children}
+    </AppContext.Provider>
   );
 }
 

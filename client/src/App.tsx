@@ -1,3 +1,10 @@
+import { AppContextProvider } from "./context/AppContext.tsx";
+import { Chat } from "./chat/Chat.tsx";
+
 export function App() {
-  return <div>hi</div>;
+  return (
+    <AppContextProvider>
+      <Chat />
+    </AppContextProvider>
+  );
 }

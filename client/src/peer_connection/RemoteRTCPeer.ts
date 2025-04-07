@@ -25,7 +25,7 @@ type ConstructorData = {
 export class RemoteRTCPeer extends RTCPeerConnection {
   private readonly unreliableDataChannel: RTCDataChannel;
   private readonly reliableDataChannel: RTCDataChannel;
-  private readonly remotePeerId: number;
+  public readonly remotePeerId: number;
 
   private readonly onopen: () => void;
   private readonly onmessage: (message: RTCMessage) => void;

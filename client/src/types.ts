@@ -5,6 +5,6 @@ export type RTCMessage =
       pType: "ping";
     }
   | {
-      pType: "something";
-      data: string;
+      pType: "chatMessage";
+      text: string;
     };

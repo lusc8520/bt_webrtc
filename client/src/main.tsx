@@ -1,10 +1,5 @@
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
-import { AppContextProvider } from "./context/AppContext.tsx";
 import "./css/main.css";
 
-createRoot(document.getElementById("root")!).render(
-  <AppContextProvider>
-    <App />
-  </AppContextProvider>,
-);
+createRoot(document.getElementById("root")!).render(<App />);

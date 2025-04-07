@@ -1,7 +1,7 @@
 {
   "name": "server",
   "scripts": {
-    "run": "tsx ./main.ts"
+    "run-server": "tsx ./main.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.23.0",
