@@ -1,3 +1,17 @@
+
+
+@media only screen and (max-width: 768px) {
+    html {
+        font-size: 80%;
+    }
+}
+
+@media only screen and (max-width: 425px) {
+    html {
+        font-size: 60%;
+    }
+}
+
 * {
     box-sizing: border-box;
     color: white;
@@ -14,5 +28,15 @@ body {
 }
 
 .chat-input:focus {
-    outline: 1px solid gray;
+    outline: 1px solid #494950;
+}
+
+.user-item {
+    transition: background-color;
+    transition-duration: 0.1s;
+}
+
+.user-item:hover {
+    cursor: pointer;
+    background-color: #242428;
 }

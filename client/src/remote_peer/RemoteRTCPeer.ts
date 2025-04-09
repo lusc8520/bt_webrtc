@@ -29,7 +29,9 @@ export class RemoteRTCPeer extends RTCPeerConnection {
 
   private readonly onopen: () => void;
   private readonly onmessage: (message: RTCMessage) => void;
-  private onclose?: () => void;
+  private readonly onclose: () => void;
+
+  public isShuttingDown = false;
 
   constructor({
     peerId,
@@ -73,45 +75,34 @@ export class RemoteRTCPeer extends RTCPeerConnection {
 
   private initChannel(channel: RTCDataChannel) {
     channel.onopen = () => {
-      this.log(`channel opened! channel name: ${channel.label}`);
       if (
         this.reliableDataChannel.readyState === "open" &&
         this.unreliableDataChannel.readyState === "open"
       ) {
-        this.log("both channels open!");
         // fire custom open event when both channels are open
         this.onopen();
         this.sendMessage("reliable", { pType: "ping" });
       }
     };
     channel.onclose = () => {
-      this.log(
-        `channel closed! channel name: ${channel.label}`,
-        "for safety reasons, just close this whole connection...",
-      );
       this.shutDown();
     };
-    channel.onerror = (event) => {
-      this.log(
-        `rtc error happened for channel name: ${channel.label}! error: ${event.error}`,
-        "closing connection...",
-      );
-      this.shutDown();
+    channel.onerror = () => {
+      channel.close();
     };
     channel.onmessage = (event) => {
       const message = JSON.parse(event.data as string) as RTCMessage;
       this.onmessage(message);
-      this.log(`received message on channel ${channel.label}: ${event.data}`);
     };
   }
 
   public shutDown() {
+    if (this.isShuttingDown) return; // prevent multiple calls of this function
+    this.onclose();
+    this.isShuttingDown = true;
     this.reliableDataChannel.close();
     this.unreliableDataChannel.close();
     this.close();
-    this.onclose?.();
-    // unset the event so that it is only called once
-    this.onclose = undefined;
   }
 
   public sendMessage(sendType: SendType, message: RTCMessage) {
@@ -121,14 +112,4 @@ export class RemoteRTCPeer extends RTCPeerConnection {
         : this.unreliableDataChannel;
     channel.send(JSON.stringify(message));
   }
-
-  private log(...data: string[]) {
-    if (!log) return;
-    console.warn(
-      `logging from RemoteRTCPeer with id ${this.remotePeerId}`,
-      data,
-    );
-  }
 }
-
-const log = false;

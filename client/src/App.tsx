@@ -1,10 +1,10 @@
-import { AppContextProvider } from "./context/AppContext.tsx";
 import { Chat } from "./chat/Chat.tsx";
+import { NetworkingContextProvider } from "./context/NetworkingContext.tsx";
 
 export function App() {
   return (
-    <AppContextProvider>
+    <NetworkingContextProvider>
       <Chat />
-    </AppContextProvider>
+    </NetworkingContextProvider>
   );
 }
