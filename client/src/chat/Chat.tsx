@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { ChatInput } from "./ChatInput.tsx";
 import { NetworkingContext } from "../context/NetworkingContext.tsx";
 import { RemotePeerList } from "./RemotePeerList.tsx";
@@ -9,8 +9,13 @@ export function Chat() {
   const { subscribeMessage } = useContext(NetworkingContext);
 
   useEffect(() => {
-    subscribeMessage((peerId, message) => {
-      console.error(peerId, message);
+    subscribeMessage((peer, message) => {
+      if (message.type === "message") {
+        if (message.message.pType === "chatMessage") {
+          const text = message.message.text;
+          addMessage({ type: "remote", peer: peer, text: text });
+        }
+      }
     });
   }, [subscribeMessage]);
 
@@ -19,6 +24,20 @@ export function Chat() {
   function addMessage(message: ChatMessage) {
     setMessages((prev) => [...prev, message]);
   }
+
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const div = messagesContainerRef.current!;
+    if (messages[messages.length - 1].type === "local") {
+      div.scrollTo({ top: div.scrollHeight, behavior: "smooth" });
+    } else {
+      const scrollOffset = div.scrollHeight - div.scrollTop - div.clientHeight;
+      if (scrollOffset > 250) return;
+      div.scrollTo({ top: div.scrollHeight, behavior: "smooth" });
+    }
+  }, [messages]);
 
   return (
     <div
@@ -34,10 +53,10 @@ export function Chat() {
           display: "flex",
           flexDirection: "column",
           flexGrow: "1",
-          overflow: "hidden",
         }}
       >
         <div
+          ref={messagesContainerRef}
           style={{
             flexGrow: "1",
             overflowX: "auto",

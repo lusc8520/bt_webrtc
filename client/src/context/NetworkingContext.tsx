@@ -14,7 +14,7 @@ type ListenerMessage =
   | { type: "connected" }
   | { type: "disconnected" }
   | { type: "message"; message: RTCMessage };
-type MessageListener = (peerId: number, message: ListenerMessage) => void;
+type MessageListener = (peer: RemoteRTCPeer, message: ListenerMessage) => void;
 
 type Data = {
   broadCast: (sendType: SendType, message: RTCMessage) => void;
@@ -83,7 +83,7 @@ export function NetworkingContextProvider({
     (peerId: number) => {
       const existent = peerConnections.get(peerId);
       if (existent != undefined) return existent;
-      const peerConnection = new RemoteRTCPeer({
+      const remoteRTCPeer = new RemoteRTCPeer({
         config: {
           iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
         },
@@ -98,8 +98,8 @@ export function NetworkingContextProvider({
           });
         },
         onnegotiationneeded: () => {
-          peerConnection.createOffer().then((offer) => {
-            peerConnection.setLocalDescription(offer);
+          remoteRTCPeer.createOffer().then((offer) => {
+            remoteRTCPeer.setLocalDescription(offer);
             sendMessage({ pType: "sdp", clientId: peerId, sdp: offer });
           });
         },
@@ -107,10 +107,10 @@ export function NetworkingContextProvider({
           console.warn(`connected to peer ${peerId}`);
           setConnectedPeers((prevState) => {
             const map = new Map(prevState);
-            return map.set(peerId, peerConnection);
+            return map.set(peerId, remoteRTCPeer);
           });
           for (const listener of messageListeners.current) {
-            listener(peerId, { type: "connected" });
+            listener(remoteRTCPeer, { type: "connected" });
           }
         },
         onclose: () => {
@@ -126,20 +126,20 @@ export function NetworkingContextProvider({
             return map;
           });
           for (const listener of messageListeners.current) {
-            listener(peerId, { type: "disconnected" });
+            listener(remoteRTCPeer, { type: "disconnected" });
           }
         },
         onmessage: (message) => {
           for (const listener of messageListeners.current) {
-            listener(peerId, { type: "message", message: message });
+            listener(remoteRTCPeer, { type: "message", message: message });
           }
         },
       });
       setPeerConnections((prevState) => {
         const map = new Map(prevState);
-        return map.set(peerId, peerConnection);
+        return map.set(peerId, remoteRTCPeer);
       });
-      return peerConnection;
+      return remoteRTCPeer;
     },
     [peerConnections, sendMessage],
   );

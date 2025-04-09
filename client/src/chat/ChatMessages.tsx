@@ -17,7 +17,7 @@ export type ChatMessage =
 
 export function ChatMessages({ messages }: Props) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "100px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       {messages.map((message, index) => {
         if (message.type === "remote") {
           return (
