@@ -75,6 +75,12 @@ export function NetworkingContextProvider({
     [connectedPeers],
   );
 
+  function invokeEvent(peer: RemoteRTCPeer, param: ListenerMessage) {
+    for (const listener of messageListeners.current) {
+      listener(peer, param);
+    }
+  }
+
   useEffect(() => {
     window.onbeforeunload = unload;
   }, [unload]);
@@ -109,9 +115,7 @@ export function NetworkingContextProvider({
             const map = new Map(prevState);
             return map.set(peerId, remoteRTCPeer);
           });
-          for (const listener of messageListeners.current) {
-            listener(remoteRTCPeer, { type: "connected" });
-          }
+          invokeEvent(remoteRTCPeer, { type: "connected" });
         },
         onclose: () => {
           console.warn(`disconnected from peer ${peerId}`);
@@ -125,14 +129,10 @@ export function NetworkingContextProvider({
             map.delete(peerId);
             return map;
           });
-          for (const listener of messageListeners.current) {
-            listener(remoteRTCPeer, { type: "disconnected" });
-          }
+          invokeEvent(remoteRTCPeer, { type: "disconnected" });
         },
         onmessage: (message) => {
-          for (const listener of messageListeners.current) {
-            listener(remoteRTCPeer, { type: "message", message: message });
-          }
+          invokeEvent(remoteRTCPeer, { type: "message", message: message });
         },
       });
       setPeerConnections((prevState) => {

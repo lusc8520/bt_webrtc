@@ -1,3 +1,5 @@
+import { PeerInfo } from "./context/PeerInfoContext.tsx";
+
 export type SendType = "reliable" | "unreliable";
 
 export type RTCMessage =
@@ -7,4 +9,12 @@ export type RTCMessage =
   | {
       pType: "chatMessage";
       text: string;
+    }
+  | {
+      pType: "peerInfo";
+      info: Partial<PeerInfo>;
     };
+
+export function getRandomInt(max: number): number {
+  return Math.floor(Math.random() * max);
+}
