@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { NetworkingContext } from "../context/NetworkingContext.tsx";
 import {
   PeerInfoContext,
@@ -6,7 +6,7 @@ import {
 } from "../context/PeerInfoContext.tsx";
 
 export function RemotePeerList() {
-  const { connectedPeers, broadCast } = useContext(NetworkingContext);
+  const { connectedPeers } = useContext(NetworkingContext);
   const { getPeerInfo, localPeerInfo, changeLocalPeerInfo } =
     useContext(PeerInfoContext);
 
@@ -43,12 +43,7 @@ export function RemotePeerList() {
                 }}
                 onClick={() => {
                   changeLocalPeerInfo({
-                    name: localPeerInfo.name,
                     color: color,
-                  });
-                  broadCast("reliable", {
-                    pType: "peerInfo",
-                    info: { ...localPeerInfo, color: color },
                   });
                 }}
               />
@@ -56,10 +51,7 @@ export function RemotePeerList() {
           })}
         </div>
       </div>
-      <PeerItem
-        name={localPeerInfo.name + " (You)"}
-        color={localPeerInfo.color}
-      />
+      <LocalPeerItem />
       {[...connectedPeers.values()].map((peer) => {
         const peerInfo = getPeerInfo(peer.remotePeerId);
         return (
@@ -85,6 +77,138 @@ export function UserCircle({ color }: { color: string }) {
         borderRadius: "50%",
       }}
     />
+  );
+}
+
+function LocalPeerItem() {
+  const { localPeerInfo, changeLocalPeerInfo } = useContext(PeerInfoContext);
+  const [edit, setEdit] = useState(false);
+  const [inputName, setInputName] = useState(localPeerInfo.name);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (edit) {
+      inputRef.current?.focus();
+    }
+  }, [edit]);
+
+  function confirmNewName() {
+    setEdit(false);
+    if (inputName.length === 0 || inputName === localPeerInfo.name) {
+      setInputName(localPeerInfo.name);
+    } else {
+      changeLocalPeerInfo({ name: inputName });
+      setInputName(inputName);
+    }
+  }
+
+  return (
+    <div
+      className="user-item"
+      style={{
+        borderRadius: "0.25rem",
+        padding: "0.25rem 0.5rem",
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.5rem",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.75rem",
+          overflow: "hidden",
+        }}
+      >
+        <UserCircle color={localPeerInfo.color} />
+        <div
+          style={{
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+          }}
+        >
+          (You) {localPeerInfo.name}
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: "0.5rem" }}>
+        {edit ? (
+          <>
+            <input
+              onInput={(e) => {
+                const newName = e.currentTarget.value;
+                if (newName.length > 15) return;
+                setInputName(newName);
+              }}
+              value={inputName}
+              ref={inputRef}
+              type="text"
+              defaultValue={inputName}
+              style={{
+                background: "#232327",
+                padding: "0rem 0.5rem",
+                border: "none",
+                flexGrow: 1,
+                width: "1%",
+                borderRadius: "0.25rem",
+              }}
+            />
+            <button
+              className="btn"
+              style={{
+                backgroundColor: "steelblue",
+                borderRadius: "0.25rem",
+                padding: "0.5rem 0.5rem",
+                border: "none",
+                color: "white",
+                fontWeight: "bold",
+              }}
+              onClick={() => {
+                confirmNewName();
+              }}
+            >
+              OK
+            </button>
+            <button
+              className="btn"
+              style={{
+                backgroundColor: "indianred",
+                borderRadius: "0.25rem",
+                padding: "0.5rem 0.5rem",
+                border: "none",
+                color: "white",
+                fontWeight: "bold",
+              }}
+              onClick={() => {
+                setEdit(false);
+                setInputName(localPeerInfo.name);
+              }}
+            >
+              NO
+            </button>
+          </>
+        ) : (
+          <button
+            className="btn"
+            style={{
+              backgroundColor: "steelblue",
+              borderRadius: "0.25rem",
+              padding: "0.5rem 0.5rem",
+              border: "none",
+              color: "white",
+              fontWeight: "bold",
+            }}
+            onClick={() => {
+              setEdit(true);
+            }}
+          >
+            Edit Name
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 

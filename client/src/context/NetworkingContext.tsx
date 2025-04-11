@@ -10,7 +10,7 @@ import {
 } from "react";
 import { ClientMessage, ServerMessage } from "../../../contract/sharedTypes.ts";
 
-type ListenerMessage =
+export type ListenerMessage =
   | { type: "connected" }
   | { type: "disconnected" }
   | { type: "message"; message: RTCMessage };

@@ -13,7 +13,7 @@ import { NetworkingContext } from "./NetworkingContext.tsx";
 type Data = {
   getPeerInfo: (id: number) => PeerInfo;
   localPeerInfo: PeerInfo;
-  changeLocalPeerInfo: (peerInfo: PeerInfo) => void;
+  changeLocalPeerInfo: (peerInfo: Partial<PeerInfo>) => void;
 };
 
 const nullPeerInfo: PeerInfo = {
@@ -33,7 +33,7 @@ export function PeerInfoContextProvider({ children }: { children: ReactNode }) {
     createDefaultPeerInfo(),
   );
   const localPeerInfoRef = useRef(localPeerInfo);
-  const { subscribeMessage } = useContext(NetworkingContext);
+  const { subscribeMessage, broadCast } = useContext(NetworkingContext);
 
   useEffect(() => {
     localPeerInfoRef.current = localPeerInfo;
@@ -46,8 +46,13 @@ export function PeerInfoContextProvider({ children }: { children: ReactNode }) {
     [peerInfos],
   );
 
-  function changeLocalPeerInfo(peerInfo: PeerInfo) {
-    setLocalPeerInfo(peerInfo);
+  function changeLocalPeerInfo(peerInfo: Partial<PeerInfo>) {
+    const updatedPeerInfo = {
+      ...localPeerInfo,
+      ...peerInfo,
+    };
+    setLocalPeerInfo(updatedPeerInfo);
+    broadCast("reliable", { pType: "peerInfo", info: updatedPeerInfo });
   }
 
   useEffect(() => {
@@ -55,6 +60,7 @@ export function PeerInfoContextProvider({ children }: { children: ReactNode }) {
       if (message.type === "message") {
         const rtcMessage = message.message;
         if (rtcMessage.pType === "peerInfo") {
+          console.error(message);
           const newPeerInfo = rtcMessage.info;
           const oldPeerInfo = getPeerInfo(peer.remotePeerId);
           setPeerInfos((prev) => {
