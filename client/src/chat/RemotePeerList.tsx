@@ -142,10 +142,14 @@ function LocalPeerItem() {
                 if (newName.length > 15) return;
                 setInputName(newName);
               }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  confirmNewName();
+                }
+              }}
               value={inputName}
               ref={inputRef}
               type="text"
-              defaultValue={inputName}
               style={{
                 background: "#232327",
                 padding: "0rem 0.5rem",

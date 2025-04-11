@@ -27,6 +27,8 @@ export function Chat() {
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
+  const [state, setState] = useState<"chat" | "draw">("chat");
+
   useEffect(() => {
     if (messages.length === 0) return;
     const div = messagesContainerRef.current!;
@@ -36,6 +38,13 @@ export function Chat() {
     }
     div.scrollTo({ top: div.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (state === "chat") {
+      const div = messagesContainerRef.current!;
+      div.scrollTo({ top: div.scrollHeight });
+    }
+  }, [state]);
 
   return (
     <div
@@ -48,13 +57,14 @@ export function Chat() {
     >
       <div
         style={{
-          height: "50px",
+          minHeight: "50px",
           borderBottomStyle: "solid",
           borderBottomColor: util.borderColor,
           borderBottomWidth: "1px",
         }}
       />
       <div
+        id="main-and-side"
         style={{
           flexGrow: 1,
           overflow: "hidden",
@@ -62,33 +72,122 @@ export function Chat() {
         }}
       >
         <div
-          id="chat-window"
+          id="main-container"
           style={{
             display: "flex",
+            flexGrow: 1,
             flexDirection: "column",
-            flexGrow: "1",
           }}
         >
           <div
-            id="messages-container"
-            ref={messagesContainerRef}
+            id="selection"
             style={{
-              flexGrow: "1",
-              overflowY: "auto",
-              padding: "1rem 0rem",
-              scrollbarColor: util.scrollbarColor,
+              display: "flex",
+              borderBottomStyle: "solid",
+              borderBottomWidth: "1px",
+              borderBottomColor: util.borderColor,
             }}
           >
-            <ChatMessages messages={messages} />
-          </div>
-          <div style={{ padding: "1rem 0.5rem", paddingTop: "0" }}>
-            <ChatInput
-              onConfirm={(text) => {
-                addMessage({ type: "local", text });
+            <div
+              style={{
+                flexGrow: 1,
+                display: "flex",
+                borderRight: `1px solid ${util.borderColor}`,
+                padding: "0.5rem 1rem",
               }}
-            />
+            >
+              <div
+                className="btn"
+                style={{
+                  flexGrow: 1,
+                  textAlign: "center",
+                  borderRadius: "0.25rem",
+                  backgroundColor:
+                    state === "chat" ? "lightgrey" : "transparent",
+                  color: state === "chat" ? "black" : "white",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                onClick={() => {
+                  setState("chat");
+                }}
+              >
+                Chat
+              </div>
+            </div>
+            <div
+              style={{
+                flexGrow: 1,
+                display: "flex",
+                padding: "0.5rem 1rem",
+              }}
+            >
+              <div
+                className="btn"
+                style={{
+                  flexGrow: 1,
+                  borderRadius: "0.25rem",
+                  backgroundColor:
+                    state === "draw" ? "lightgrey" : "transparent",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: state === "draw" ? "black" : "white",
+                }}
+                onClick={() => {
+                  setState("draw");
+                }}
+              >
+                Draw
+              </div>
+            </div>
           </div>
+          {state === "chat" ? (
+            <div
+              id="chat-window"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                flexGrow: "1",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                id="messages-container"
+                ref={messagesContainerRef}
+                style={{
+                  flexGrow: "1",
+                  overflowY: "auto",
+                  padding: "1rem 0rem",
+                  scrollbarColor: util.scrollbarColor,
+                }}
+              >
+                <ChatMessages messages={messages} />
+              </div>
+              <div style={{ padding: "1rem 0.5rem", paddingTop: "0" }}>
+                <ChatInput
+                  onConfirm={(text) => {
+                    addMessage({ type: "local", text });
+                  }}
+                />
+              </div>
+            </div>
+          ) : (
+            <div
+              id="draw-window"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                flexGrow: "1",
+                overflow: "hidden",
+              }}
+            >
+              hi
+            </div>
+          )}
         </div>
+
         <div
           id="user-list-container"
           style={{
