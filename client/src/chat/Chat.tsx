@@ -4,6 +4,7 @@ import { NetworkingContext } from "../context/NetworkingContext.tsx";
 import { RemotePeerList } from "./RemotePeerList.tsx";
 import { util } from "../util/util.ts";
 import { ChatMessage, ChatMessages } from "./ChatMessages.tsx";
+import { DrawingBoard } from "./DrawingBoard.tsx";
 
 export function Chat() {
   const { subscribeMessage } = useContext(NetworkingContext);
@@ -183,7 +184,7 @@ export function Chat() {
                 overflow: "hidden",
               }}
             >
-              hi
+              <DrawingBoard />
             </div>
           )}
         </div>
