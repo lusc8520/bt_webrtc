@@ -17,7 +17,7 @@ export function DrawingBoard() {
     setCurrentLine({ points: [] });
   }
 
-  const { getPeerInfo } = useContext(PeerInfoContext);
+  const { getPeerInfo, localPeerInfo } = useContext(PeerInfoContext);
   const { drawInfos } = useContext(DrawingContext);
 
   useEffect(() => {}, [drawInfos]);
@@ -79,51 +79,54 @@ export function DrawingBoard() {
           });
         }}
       >
-        {currentLine && <Line line={currentLine} />}
-        {[...drawInfos].map(([id, info]) => {
+        {lines.map((line, index) => (
+          <Line key={index} line={line} color={localPeerInfo.color} />
+        ))}
+        {currentLine && <Line line={currentLine} color={localPeerInfo.color} />}
+        {[...drawInfos].map(([id, info], index) => {
           const peerInfo = getPeerInfo(id);
           return (
-            <g
-              pointerEvents="none"
-              key={id}
-              transform={`translate(${info.position.x}, ${info.position.y})`}
-              x={info.position.x}
-              y={info.position.y}
-            >
-              <text
-                focusable="false"
-                fontSize="3"
-                fill={peerInfo.color}
-                textAnchor="middle"
-                y="-1.5"
+            <g key={index}>
+              {info.lines.map((line, index) => (
+                <Line key={index} line={line} color={peerInfo.color} />
+              ))}
+              {info.currentLine && (
+                <Line line={info.currentLine} color={peerInfo.color} />
+              )}
+              <g
+                pointerEvents="none"
+                key={id}
+                transform={`translate(${info.position.x}, ${info.position.y})`}
+                x={info.position.x}
+                y={info.position.y}
               >
-                {peerInfo.name}
-              </text>
-              <circle
-                fill={peerInfo.color}
-                r="1"
-                // cx={info.position.x}
-                // cy={info.position.y}
-              />
+                <text
+                  focusable="false"
+                  fontSize="3"
+                  fill={peerInfo.color}
+                  textAnchor="middle"
+                  y="-1"
+                >
+                  {peerInfo.name}
+                </text>
+                <circle fill={peerInfo.color} r="1" />
+              </g>
             </g>
           );
         })}
-        {lines.map((line, index) => (
-          <Line key={index} line={line} />
-        ))}
       </svg>
     </div>
   );
 }
 
-function Line({ line }: { line: Line }) {
+function Line({ line, color }: { line: Line; color: string }) {
   return (
     <polyline
       strokeLinecap="round"
       strokeLinejoin="round"
       fill="none"
       strokeWidth={1}
-      stroke="black"
+      stroke={color}
       points={line.points.map((p) => `${p.x},${p.y}`).join(" ")}
     />
   );

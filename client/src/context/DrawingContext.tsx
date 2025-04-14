@@ -14,6 +14,12 @@ type DrawingData = {
 
 type PeerDrawInfo = {
   position: Vector2;
+  lines: Line[];
+  currentLine: Line | undefined;
+};
+
+type Line = {
+  points: Vector2[];
 };
 
 export const DrawingContext = createContext<DrawingData>({
@@ -31,9 +37,33 @@ export function DrawingContextProvider({ children }: { children: ReactNode }) {
       if (message.type === "message" && message.message.pType === "draw") {
         const drawMessage = message.message;
         setDrawInfos((prev) => {
-          return new Map(prev).set(peer.remotePeerId, {
+          const current = prev.get(peer.remotePeerId);
+          const defaul: PeerDrawInfo = {
             position: drawMessage.position,
-          });
+            lines: current?.lines ?? [],
+            currentLine: current?.currentLine,
+          };
+          if (drawMessage.isDrawing) {
+            if (defaul.currentLine !== undefined) {
+              defaul.currentLine = {
+                points: [...defaul.currentLine.points, defaul.position],
+              };
+            } else {
+              defaul.currentLine = { points: [defaul.position] };
+            }
+          } else {
+            if (defaul.currentLine !== undefined) {
+              defaul.lines = [...defaul.lines, defaul.currentLine];
+              defaul.currentLine = undefined;
+            }
+          }
+          return new Map(prev).set(peer.remotePeerId, defaul);
+        });
+      } else if (message.type === "disconnected") {
+        setDrawInfos((prev) => {
+          const m = new Map(prev);
+          m.delete(peer.remotePeerId);
+          return m;
         });
       }
     });
