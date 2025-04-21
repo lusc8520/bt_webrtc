@@ -1,21 +1,15 @@
-import * as React from "react";
 import { util } from "../util/util.ts";
-import { useContext } from "react";
-import { NetworkingContext } from "../context/NetworkingContext.tsx";
+import { useContext, useState } from "react";
+import { ChatMessagesContext } from "../context/ChatMessagesContext.tsx";
 
-export function ChatInput({
-  onConfirm,
-}: {
-  onConfirm?: (text: string) => void;
-}) {
-  const [text, setText] = React.useState("");
+export function ChatInput() {
+  const [text, setText] = useState("");
 
-  const { broadCast } = useContext(NetworkingContext);
+  const { broadCastMessage } = useContext(ChatMessagesContext);
 
   function confirmText() {
     if (text === "") return;
-    onConfirm?.(text);
-    broadCast("reliable", { pType: "chatMessage", text: text });
+    broadCastMessage(text);
     setText("");
   }
   return (

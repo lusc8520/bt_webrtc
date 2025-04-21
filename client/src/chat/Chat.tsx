@@ -1,30 +1,13 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { ChatInput } from "./ChatInput.tsx";
-import { NetworkingContext } from "../context/NetworkingContext.tsx";
 import { RemotePeerList } from "./RemotePeerList.tsx";
 import { util } from "../util/util.ts";
-import { ChatMessage, ChatMessages } from "./ChatMessages.tsx";
+import { ChatMessages } from "./ChatMessages.tsx";
 import { DrawingBoard } from "./DrawingBoard.tsx";
+import { ChatMessagesContext } from "../context/ChatMessagesContext.tsx";
 
 export function Chat() {
-  const { subscribeMessage } = useContext(NetworkingContext);
-
-  useEffect(() => {
-    subscribeMessage((peer, message) => {
-      if (message.type === "message") {
-        if (message.message.pType === "chatMessage") {
-          const text = message.message.text;
-          addMessage({ type: "remote", peer: peer, text: text });
-        }
-      }
-    });
-  }, [subscribeMessage]);
-
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-
-  function addMessage(message: ChatMessage) {
-    setMessages((prev) => [...prev, message]);
-  }
+  const { messages } = useContext(ChatMessagesContext);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -164,14 +147,10 @@ export function Chat() {
                   scrollbarColor: util.scrollbarColor,
                 }}
               >
-                <ChatMessages messages={messages} />
+                <ChatMessages />
               </div>
               <div style={{ padding: "1rem 0.5rem", paddingTop: "0" }}>
-                <ChatInput
-                  onConfirm={(text) => {
-                    addMessage({ type: "local", text });
-                  }}
-                />
+                <ChatInput />
               </div>
             </div>
           ) : (

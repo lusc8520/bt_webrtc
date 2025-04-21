@@ -9,7 +9,9 @@ export type RTCMessage =
   | {
       pType: "chatMessage";
       text: string;
+      id: number;
     }
+  | { pType: "deleteMessage"; id: number }
   | {
       pType: "peerInfo";
       info: Partial<PeerInfo>;

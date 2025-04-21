@@ -1,63 +1,95 @@
-import { RemoteRTCPeer } from "../remote_peer/RemoteRTCPeer.ts";
-import { ReactNode, useContext } from "react";
+import { useContext } from "react";
 import { UserCircle } from "./RemotePeerList.tsx";
-import { PeerInfo, PeerInfoContext } from "../context/PeerInfoContext.tsx";
+import { PeerInfoContext } from "../context/PeerInfoContext.tsx";
+import {
+  ChatMessagesContext,
+  LocalChatMessage,
+  RemoteChatMessage,
+} from "../context/ChatMessagesContext.tsx";
+import { util } from "../util/util.ts";
 
-type Props = {
-  messages: ChatMessage[];
-  children?: ReactNode;
-};
-
-export type ChatMessage =
-  | {
-      type: "local";
-      text: string;
-    }
-  | {
-      type: "remote";
-      text: string;
-      peer: RemoteRTCPeer;
-    };
-
-export function ChatMessages({ messages, children }: Props) {
-  const { getPeerInfo, localPeerInfo } = useContext(PeerInfoContext);
+export function ChatMessages() {
+  const { messages } = useContext(ChatMessagesContext);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       {messages.map((message, index) => {
-        if (message.type === "remote") {
-          return (
-            <Message
-              text={message.text}
-              peerInfo={getPeerInfo(message.peer.remotePeerId)}
-              key={index}
-            />
-          );
+        if (message.type === "local") {
+          return <LocalMessage key={index} message={message} />;
         } else {
-          return (
-            <Message
-              text={message.text}
-              peerInfo={localPeerInfo}
-              key={index}
-              isLocal={true}
-            />
-          );
+          return <RemoteMessage key={index} message={message} />;
         }
       })}
-      {children}
     </div>
   );
 }
 
-function Message({
-  text,
-  peerInfo,
-  isLocal,
-}: {
-  text: string;
-  peerInfo: PeerInfo;
-  isLocal?: boolean;
-}) {
+function LocalMessage({ message }: { message: LocalChatMessage }) {
+  const { localPeerInfo } = useContext(PeerInfoContext);
+  const { broadCastDelete } = useContext(ChatMessagesContext);
+  return (
+    <div
+      className="user-item"
+      style={{
+        borderRadius: "3px",
+        display: "flex",
+        padding: "0.5rem",
+        gap: "1rem",
+        position: "relative",
+      }}
+    >
+      <UserCircle color={localPeerInfo.color} />
+      <div
+        className="message-edit"
+        style={{
+          position: "absolute",
+          top: "-0.8rem",
+          right: "1rem",
+          padding: "0.2rem 0.5rem",
+          backgroundColor: "#2c2d32",
+          borderRadius: "0.5rem",
+          borderColor: util.borderColor,
+          borderWidth: "1px",
+          borderStyle: "solid",
+          boxShadow: "0 0.2rem 0.5rem rgba(0, 0, 0, 0.5)",
+        }}
+      >
+        <button
+          className="btn deleteButton"
+          style={{
+            fontWeight: "bold",
+            backgroundColor: "indianred",
+            padding: "0.1rem 0.3rem",
+            margin: "0",
+            border: "none",
+            borderRadius: "0.1rem",
+          }}
+          onClick={() => {
+            broadCastDelete(message.id);
+          }}
+        >
+          Delete
+        </button>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+        <div
+          style={{
+            color: localPeerInfo.color,
+            fontWeight: "bold",
+            fontSize: "1.1rem",
+          }}
+        >
+          {localPeerInfo.name} {"(You)"}
+        </div>
+        <div>{message.text}</div>
+      </div>
+    </div>
+  );
+}
+
+function RemoteMessage({ message }: { message: RemoteChatMessage }) {
+  const { getPeerInfo } = useContext(PeerInfoContext);
+  const peerInfo = getPeerInfo(message.peer.remotePeerId);
   return (
     <div
       className="user-item"
@@ -77,9 +109,9 @@ function Message({
             fontSize: "1.1rem",
           }}
         >
-          {peerInfo.name} {isLocal && "(You)"}
+          {peerInfo.name}
         </div>
-        <div>{text}</div>
+        <div>{message.text}</div>
       </div>
     </div>
   );

@@ -56,6 +56,14 @@ body {
     background-color: #242428;
 }
 
+.message-edit {
+    display: none;
+}
+
+.user-item:hover .message-edit {
+    display: block;
+}
+
 .noselect {
     -webkit-user-drag: none;
     -webkit-user-select: none;
