@@ -1,32 +1,48 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import { NetworkingContext } from "../context/NetworkingContext.tsx";
 import { DrawingContext } from "../context/DrawingContext.tsx";
 import { PeerInfoContext } from "../context/PeerInfoContext.tsx";
 
 type Line = {
   points: { x: number; y: number }[];
+  fade: boolean;
 };
 
-export function DrawingBoard() {
-  const [lines, setLines] = useState<Line[]>([]);
+const lineDisplayDuration = 2000;
+const lineFadeDuration = 1000;
 
+export function DrawingBoard() {
   const { broadCast } = useContext(NetworkingContext);
   const [currentLine, setCurrentLine] = useState<Line | null>(null);
 
+  const [, setLineCount] = useState(0);
+  const [lineMap, setLineMap] = useState<Map<number, Line>>(new Map());
+
   function startDraw() {
-    setCurrentLine({ points: [] });
+    setCurrentLine({ points: [], fade: false });
   }
 
   const { getPeerInfo, localPeerInfo } = useContext(PeerInfoContext);
   const { drawInfos } = useContext(DrawingContext);
 
-  useEffect(() => {}, [drawInfos]);
-
   function endDraw() {
     const line = currentLine;
     if (line === null) return;
-    setLines((prev) => {
-      return [...prev, line];
+
+    setLineCount((prev) => {
+      const id = prev;
+      setLineMap((prev) => new Map(prev).set(id, line));
+      setTimeout(() => {
+        setLineMap((prev) => new Map(prev).set(id, { ...line, fade: true }));
+        setTimeout(() => {
+          setLineMap((prev) => {
+            const map = new Map(prev);
+            map.delete(id);
+            return map;
+          });
+        }, lineFadeDuration);
+      }, lineDisplayDuration);
+      return prev + 1;
     });
     setCurrentLine(null);
   }
@@ -75,12 +91,13 @@ export function DrawingBoard() {
             if (prev === null) return prev;
             return {
               points: [...prev.points, { x: percentX, y: percentY }],
+              fade: false,
             };
           });
         }}
       >
-        {lines.map((line, index) => (
-          <Line key={index} line={line} color={localPeerInfo.color} />
+        {[...lineMap].map(([id, line]) => (
+          <Line key={id} line={line} color={localPeerInfo.color} />
         ))}
         {currentLine && <Line line={currentLine} color={localPeerInfo.color} />}
         {[...drawInfos].map(([id, info], index) => {
@@ -128,6 +145,10 @@ function Line({ line, color }: { line: Line; color: string }) {
       strokeWidth={1}
       stroke={color}
       points={line.points.map((p) => `${p.x},${p.y}`).join(" ")}
+      style={{
+        opacity: line.fade ? 0 : 1,
+        transition: `opacity ${lineFadeDuration}ms ease-in-out`,
+      }}
     />
   );
 }

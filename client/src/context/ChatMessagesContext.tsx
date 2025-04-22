@@ -40,11 +40,7 @@ export function ChatMessagesProvider({ children }: { children: ReactNode }) {
   const { subscribeMessage, broadCast } = useContext(NetworkingContext);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [messageId, setMessageId] = useState(0);
-
-  useEffect(() => {
-    console.warn(messageId);
-  }, [messageId]);
+  const [, setMessageId] = useState(0);
 
   useEffect(() => {
     subscribeMessage((peer, message) => {

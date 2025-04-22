@@ -20,6 +20,7 @@ type PeerDrawInfo = {
 
 type Line = {
   points: Vector2[];
+  fade: boolean;
 };
 
 export const DrawingContext = createContext<DrawingData>({
@@ -47,9 +48,10 @@ export function DrawingContextProvider({ children }: { children: ReactNode }) {
             if (defaul.currentLine !== undefined) {
               defaul.currentLine = {
                 points: [...defaul.currentLine.points, defaul.position],
+                fade: false,
               };
             } else {
-              defaul.currentLine = { points: [defaul.position] };
+              defaul.currentLine = { points: [defaul.position], fade: false };
             }
           } else {
             if (defaul.currentLine !== undefined) {
