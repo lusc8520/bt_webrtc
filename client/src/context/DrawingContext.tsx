@@ -7,6 +7,10 @@ import {
 } from "react";
 import { NetworkingContext } from "./NetworkingContext.tsx";
 import { Vector2 } from "../types.ts";
+import {
+  lineDisplayDuration,
+  lineFadeDuration,
+} from "../chat/DrawingBoard.tsx";
 
 type DrawingData = {
   drawInfos: Map<number, PeerDrawInfo>;
@@ -14,8 +18,9 @@ type DrawingData = {
 
 type PeerDrawInfo = {
   position: Vector2;
-  lines: Line[];
+  lines: Map<number, Line>;
   currentLine: Line | undefined;
+  lineCount: number;
 };
 
 type Line = {
@@ -39,10 +44,12 @@ export function DrawingContextProvider({ children }: { children: ReactNode }) {
         const drawMessage = message.message;
         setDrawInfos((prev) => {
           const current = prev.get(peer.remotePeerId);
+          const id = current?.lineCount ?? 0;
           const defaul: PeerDrawInfo = {
             position: drawMessage.position,
-            lines: current?.lines ?? [],
+            lines: current?.lines ?? new Map(),
             currentLine: current?.currentLine,
+            lineCount: id,
           };
           if (drawMessage.isDrawing) {
             if (defaul.currentLine !== undefined) {
@@ -55,7 +62,25 @@ export function DrawingContextProvider({ children }: { children: ReactNode }) {
             }
           } else {
             if (defaul.currentLine !== undefined) {
-              defaul.lines = [...defaul.lines, defaul.currentLine];
+              defaul.lines.set(id, defaul.currentLine);
+              defaul.lineCount++;
+              const line = defaul.currentLine;
+              setTimeout(() => {
+                setDrawInfos((prev) => {
+                  const peerInfo = prev.get(peer.remotePeerId);
+                  if (peerInfo === undefined) return prev;
+                  peerInfo.lines.set(id, { ...line, fade: true });
+                  return new Map(prev);
+                });
+                setTimeout(() => {
+                  setDrawInfos((prev) => {
+                    const peerInfo = prev.get(peer.remotePeerId);
+                    if (peerInfo === undefined) return prev;
+                    peerInfo.lines.delete(id);
+                    return new Map(prev);
+                  });
+                }, lineFadeDuration);
+              }, lineDisplayDuration);
               defaul.currentLine = undefined;
             }
           }

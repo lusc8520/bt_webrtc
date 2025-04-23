@@ -8,8 +8,8 @@ type Line = {
   fade: boolean;
 };
 
-const lineDisplayDuration = 2000;
-const lineFadeDuration = 1000;
+export const lineDisplayDuration = 2000;
+export const lineFadeDuration = 1000;
 
 export function DrawingBoard() {
   const { broadCast } = useContext(NetworkingContext);
@@ -104,8 +104,8 @@ export function DrawingBoard() {
           const peerInfo = getPeerInfo(id);
           return (
             <g key={index}>
-              {info.lines.map((line, index) => (
-                <Line key={index} line={line} color={peerInfo.color} />
+              {[...info.lines].map(([id, line]) => (
+                <Line key={id} line={line} color={peerInfo.color} />
               ))}
               {info.currentLine && (
                 <Line line={info.currentLine} color={peerInfo.color} />
