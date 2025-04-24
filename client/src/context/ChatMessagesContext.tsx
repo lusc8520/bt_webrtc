@@ -7,6 +7,7 @@ import {
 } from "react";
 import { RemoteRTCPeer } from "../remote_peer/RemoteRTCPeer.ts";
 import { NetworkingContext } from "./NetworkingContext.tsx";
+import { VoidEvent } from "../util/event.ts";
 
 type Data = {
   messages: ChatMessage[];
@@ -35,6 +36,8 @@ export type RemoteChatMessage = {
   id: number;
   edited: boolean;
 };
+
+export const scrollDownEvent = new VoidEvent();
 
 export function ChatMessagesProvider({ children }: { children: ReactNode }) {
   const { subscribeMessage, broadCast } = useContext(NetworkingContext);
@@ -68,7 +71,14 @@ export function ChatMessagesProvider({ children }: { children: ReactNode }) {
     });
   }, [subscribeMessage]);
 
+  function invokeScrollDown() {
+    scrollDownEvent.invoke();
+  }
+
   function broadCastMessage(text: string) {
+    setTimeout(() => {
+      invokeScrollDown();
+    }, 50);
     setMessageId((prevState) => {
       addMessage({ type: "local", text, id: prevState, edited: false });
       broadCast("reliable", { pType: "chatMessage", text, id: prevState });

@@ -15,3 +15,20 @@ export class TypeEvent<EventType> {
     this.listeners.delete(func);
   }
 }
+
+export class VoidEvent {
+  private readonly listeners = new Set<() => void>();
+
+  public invoke() {
+    for (const func of this.listeners) {
+      func();
+    }
+  }
+  public addEventListener(func: () => void) {
+    this.listeners.add(func);
+  }
+
+  public removeEventListener(func: () => void) {
+    this.listeners.delete(func);
+  }
+}
