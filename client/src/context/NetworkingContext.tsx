@@ -4,11 +4,13 @@ import {
   createContext,
   ReactNode,
   useCallback,
+  useContext,
   useEffect,
   useRef,
   useState,
 } from "react";
 import { ClientMessage, ServerMessage } from "../../../contract/sharedTypes.ts";
+import { TurnContext } from "./TurnContext.tsx";
 
 export type ListenerMessage =
   | { type: "connected" }
@@ -44,6 +46,8 @@ export function NetworkingContextProvider({
   const [connectedPeers, setConnectedPeers] = useState<
     Map<number, RemoteRTCPeer>
   >(new Map());
+
+  const turnServer = useContext(TurnContext);
 
   const subscribeMessage = useCallback((listener: MessageListener) => {
     messageListeners.current.push(listener);
@@ -89,6 +93,7 @@ export function NetworkingContextProvider({
     (peerId: number) => {
       const existent = peerConnections.get(peerId);
       if (existent != undefined) return existent;
+      console.log("creating new peer. use turn config here...", turnServer);
       const remoteRTCPeer = new RemoteRTCPeer({
         config: {
           iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
