@@ -13,15 +13,19 @@ type Data = {
   messages: ChatMessage[];
   broadCastMessage: (text: string) => void;
   broadCastDelete: (id: number) => void;
+  broadCastEdit: (id: number, text: string) => void;
 };
 
 export const ChatMessagesContext = createContext<Data>({
   messages: [],
   broadCastMessage: () => {},
   broadCastDelete: () => {},
+  broadCastEdit: () => {},
 });
 
 export type ChatMessage = LocalChatMessage | RemoteChatMessage;
+
+export const maxMessageLength = 100;
 
 export type LocalChatMessage = {
   type: "local";
@@ -66,6 +70,9 @@ export function ChatMessagesProvider({ children }: { children: ReactNode }) {
               return message.id !== id;
             }),
           );
+        } else if (message.message.pType === "editMessage") {
+          const editData = message.message;
+          editMessage("remote", editData.id, editData.text);
         }
       }
     });
@@ -73,6 +80,25 @@ export function ChatMessagesProvider({ children }: { children: ReactNode }) {
 
   function invokeScrollDown() {
     scrollDownEvent.invoke();
+  }
+
+  function editMessage(type: "local" | "remote", id: number, text: string) {
+    setMessages((prev) => {
+      return prev.map((message) => {
+        if (message.type !== type) return message;
+        if (message.id !== id) return message;
+        return {
+          ...message,
+          edited: true,
+          text: text,
+        };
+      });
+    });
+  }
+
+  function broadCastEdit(id: number, text: string) {
+    broadCast("reliable", { pType: "editMessage", id, text });
+    editMessage("local", id, text);
   }
 
   function broadCastMessage(text: string) {
@@ -102,7 +128,7 @@ export function ChatMessagesProvider({ children }: { children: ReactNode }) {
 
   return (
     <ChatMessagesContext.Provider
-      value={{ messages, broadCastMessage, broadCastDelete }}
+      value={{ messages, broadCastMessage, broadCastDelete, broadCastEdit }}
     >
       {children}
     </ChatMessagesContext.Provider>

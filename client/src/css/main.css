@@ -56,12 +56,17 @@ body {
     background-color: #242428;
 }
 
-.message-edit {
-    display: none;
-}
 
 .user-item:hover .message-edit {
-    display: block;
+    display: flex;
+}
+
+.hide {
+    display: none !important;
+}
+
+.message-edit {
+    display: none;
 }
 
 .noselect {

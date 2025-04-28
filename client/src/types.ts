@@ -12,6 +12,7 @@ export type RTCMessage =
       id: number;
     }
   | { pType: "deleteMessage"; id: number }
+  | { pType: "editMessage"; id: number; text: string }
   | {
       pType: "peerInfo";
       info: Partial<PeerInfo>;

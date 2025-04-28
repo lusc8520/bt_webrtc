@@ -1,6 +1,9 @@
 import { util } from "../util/util.ts";
 import { useContext, useState } from "react";
-import { ChatMessagesContext } from "../context/ChatMessagesContext.tsx";
+import {
+  ChatMessagesContext,
+  maxMessageLength,
+} from "../context/ChatMessagesContext.tsx";
 
 export function ChatInput() {
   const [text, setText] = useState("");
@@ -34,7 +37,10 @@ export function ChatInput() {
         placeholder={text === "" ? "Write Message..." : ""}
         type={"text"}
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={(e) => {
+          if (e.target.value.length > maxMessageLength) return;
+          setText(e.target.value);
+        }}
       />
     </div>
   );

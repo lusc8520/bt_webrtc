@@ -31,7 +31,7 @@ export class RemoteRTCPeer extends RTCPeerConnection {
   private readonly onmessage: (message: RTCMessage) => void;
   private readonly onclose: () => void;
 
-  public isShuttingDown = false;
+  public isShutDown = false;
 
   constructor({
     peerId,
@@ -43,24 +43,13 @@ export class RemoteRTCPeer extends RTCPeerConnection {
     onmessage,
   }: ConstructorData) {
     super(config);
+    this.handleErrors();
     this.onnegotiationneeded = onnegotiationneeded;
     this.onicecandidate = onicecandidate;
     this.remotePeerId = peerId;
     this.onopen = onopen;
     this.onclose = onclose;
     this.onmessage = onmessage;
-    this.onconnectionstatechange = () => {
-      switch (this.connectionState) {
-        case "failed":
-          this.shutDown();
-          break;
-        case "closed":
-          this.shutDown();
-          break;
-        case "disconnected":
-          this.shutDown();
-      }
-    };
     this.reliableDataChannel = this.createDataChannel(
       "reliable",
       reliableConfig,
@@ -80,6 +69,15 @@ export class RemoteRTCPeer extends RTCPeerConnection {
         this.unreliableDataChannel.readyState === "open"
       ) {
         // fire custom open event when both channels are open
+        const sctp = this.sctp;
+        if (sctp !== null) {
+          console.warn(
+            "max channels:",
+            sctp.maxChannels,
+            "max message size:",
+            sctp.maxMessageSize,
+          );
+        }
         this.onopen();
         this.sendMessage("reliable", { pType: "ping" });
       }
@@ -90,16 +88,21 @@ export class RemoteRTCPeer extends RTCPeerConnection {
     channel.onerror = () => {
       channel.close();
     };
+
     channel.onmessage = (event) => {
-      const message = JSON.parse(event.data as string) as RTCMessage;
-      this.onmessage(message);
+      if (typeof event.data === "string") {
+        const message = JSON.parse(event.data) as RTCMessage;
+        this.onmessage(message);
+      } else {
+        console.warn("message was no string", event.data);
+      }
     };
   }
 
   public shutDown() {
-    if (this.isShuttingDown) return; // prevent multiple calls of this function
+    if (this.isShutDown) return; // prevent multiple calls of this function
     this.onclose();
-    this.isShuttingDown = true;
+    this.isShutDown = true;
     this.reliableDataChannel.close();
     this.unreliableDataChannel.close();
     this.close();
@@ -111,5 +114,37 @@ export class RemoteRTCPeer extends RTCPeerConnection {
         ? this.reliableDataChannel
         : this.unreliableDataChannel;
     channel.send(JSON.stringify(message));
+  }
+
+  private handleErrors() {
+    this.onicecandidateerror = (e) => {
+      console.error("ICE ERROR", `status code: ${e.errorCode}`, e.errorText);
+    };
+
+    this.onconnectionstatechange = () => {
+      switch (this.connectionState) {
+        case "failed":
+          this.shutDown();
+          break;
+        case "closed":
+          this.shutDown();
+          break;
+        case "disconnected":
+          this.shutDown();
+      }
+    };
+    this.oniceconnectionstatechange = () => {
+      switch (this.iceConnectionState) {
+        case "disconnected":
+          this.shutDown();
+          break;
+        case "closed":
+          this.shutDown();
+          break;
+        case "failed":
+          this.shutDown();
+          break;
+      }
+    };
   }
 }
