@@ -20,6 +20,7 @@ type MessageListener = (peer: RemoteRTCPeer, message: ListenerMessage) => void;
 
 type Data = {
   broadCast: (sendType: SendType, message: RTCMessage) => void;
+  sendToPeer: (peerId: number, sendType: SendType, message: RTCMessage) => void;
   subscribeMessage: (listener: MessageListener) => void;
   connectedPeers: Map<number, RemoteRTCPeer>;
 };
@@ -28,6 +29,7 @@ export const NetworkingContext = createContext<Data>({
   broadCast: () => {},
   subscribeMessage: () => {},
   connectedPeers: new Map(),
+  sendToPeer: () => {},
 });
 
 const wsUrl = "ws://localhost:8080";
@@ -75,6 +77,13 @@ export function NetworkingContextProvider({
       for (const peer of connectedPeers.values()) {
         peer.sendMessage(sendType, message);
       }
+    },
+    [connectedPeers],
+  );
+
+  const sendToPeer = useCallback(
+    (peerId: number, sendType: SendType, message: RTCMessage) => {
+      connectedPeers.get(peerId)?.sendMessage(sendType, message);
     },
     [connectedPeers],
   );
@@ -212,7 +221,7 @@ export function NetworkingContextProvider({
 
   return (
     <NetworkingContext.Provider
-      value={{ broadCast, subscribeMessage, connectedPeers }}
+      value={{ broadCast, subscribeMessage, connectedPeers, sendToPeer }}
     >
       {children}
     </NetworkingContext.Provider>

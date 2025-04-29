@@ -13,6 +13,7 @@ export type RTCMessage =
     }
   | { pType: "deleteMessage"; id: number }
   | { pType: "editMessage"; id: number; text: string }
+  | { pType: "rateMessage"; rateMessage: RateMessage }
   | {
       pType: "peerInfo";
       info: Partial<PeerInfo>;
@@ -31,3 +32,21 @@ export type Vector2 = {
   x: number;
   y: number;
 };
+
+export type RateMessage =
+  | {
+      type: "yours";
+      messageId: number;
+      rating: boolean | null;
+    }
+  | {
+      type: "other";
+      peerId: number;
+      messageId: number;
+      rating: boolean | null;
+    }
+  | {
+      type: "mine";
+      messageId: number;
+      rating: boolean | null;
+    };

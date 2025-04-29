@@ -1,10 +1,12 @@
-import { useContext, useState } from "react";
+import { CSSProperties, useContext, useState } from "react";
 import { UserCircle } from "./RemotePeerList.tsx";
 import { PeerInfoContext } from "../context/PeerInfoContext.tsx";
 import {
+  ChatMessage,
   ChatMessagesContext,
   LocalChatMessage,
   maxMessageLength,
+  Rating,
   RemoteChatMessage,
 } from "../context/ChatMessagesContext.tsx";
 import { util } from "../util/util.ts";
@@ -205,10 +207,86 @@ function LocalMessage({ message }: { message: LocalChatMessage }) {
             {message.edited && <EditedIndicator />}
           </div>
         )}
+        <MessageRating message={message} />
       </div>
     </div>
   );
 }
+
+function MessageRating({ message }: { message: ChatMessage }) {
+  const [rating, setRating] = useState<Rating>(message.localRating);
+  const { broadCastRemoteRating, broadCastLocalRating } =
+    useContext(ChatMessagesContext);
+
+  function updateRating(r: Rating) {
+    const newRating = r === rating ? null : r;
+    console.warn(newRating);
+    setRating(newRating);
+    if (message.type === "local") {
+      broadCastLocalRating(message.id, newRating);
+    } else {
+      broadCastRemoteRating(message.peer.remotePeerId, message.id, newRating);
+    }
+  }
+
+  const remoteRatings = [...message.remoteRatings];
+  let likeCount = remoteRatings.filter(([, rating]) => rating === true).length;
+  let dislikeCount = remoteRatings.filter(
+    ([, rating]) => rating === false,
+  ).length;
+  const localRating = message.localRating;
+  if (localRating !== null) {
+    if (localRating) {
+      likeCount++;
+    } else {
+      dislikeCount++;
+    }
+  }
+
+  function getStyle(value: boolean) {
+    if (rating === null) return ratingButtonStyle;
+    if (value === rating) return ratingButtonStyleActive;
+    return ratingButtonStyle;
+  }
+
+  return (
+    <div style={{ display: "flex", gap: "0.5rem" }}>
+      <button
+        onClick={() => {
+          updateRating(true);
+        }}
+        style={getStyle(true)}
+        className="btn"
+      >
+        Likes: {likeCount}
+      </button>
+      <button
+        onClick={() => {
+          updateRating(false);
+        }}
+        style={getStyle(false)}
+        className="btn"
+      >
+        Dislikes: {dislikeCount}
+      </button>
+    </div>
+  );
+}
+
+const ratingButtonStyle: CSSProperties = {
+  borderStyle: "solid",
+  borderWidth: "2px",
+  margin: 0,
+  padding: "0.5rem 1rem",
+  borderColor: util.borderColor,
+  fontSize: "1rem",
+  backgroundColor: "transparent",
+};
+
+const ratingButtonStyleActive: CSSProperties = {
+  ...ratingButtonStyle,
+  backgroundColor: "dodgerblue",
+};
 
 function EditedIndicator() {
   return (
@@ -252,6 +330,7 @@ function RemoteMessage({ message }: { message: RemoteChatMessage }) {
           {message.text}
           {message.edited && <EditedIndicator />}
         </div>
+        <MessageRating message={message} />
       </div>
     </div>
   );
