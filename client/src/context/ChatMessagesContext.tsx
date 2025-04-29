@@ -34,7 +34,7 @@ export const ChatMessagesContext = createContext<Data>({
 
 export type ChatMessage = LocalChatMessage | RemoteChatMessage;
 
-export const maxMessageLength = 100;
+export const maxMessageLength = 500;
 
 type BaseChatMessage = {
   text: string;

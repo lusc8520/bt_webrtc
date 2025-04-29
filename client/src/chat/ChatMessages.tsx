@@ -203,7 +203,7 @@ function LocalMessage({ message }: { message: LocalChatMessage }) {
               textWrap: "wrap",
             }}
           >
-            {message.text}
+            <span dangerouslySetInnerHTML={{ __html: urlify(message.text) }} />
             {message.edited && <EditedIndicator />}
           </div>
         )}
@@ -327,11 +327,22 @@ function RemoteMessage({ message }: { message: RemoteChatMessage }) {
           {peerInfo.name}
         </div>
         <div>
-          {message.text}
+          <span dangerouslySetInnerHTML={{ __html: urlify(message.text) }} />
           {message.edited && <EditedIndicator />}
         </div>
         <MessageRating message={message} />
       </div>
     </div>
   );
+}
+
+const urlRegex = /(((https?:\/\/)|(www\.))[^\s]+)/g;
+// https://stackoverflow.com/a/25821576/25311842
+function urlify(text: string) {
+  return text.replace(urlRegex, function (url, b, c) {
+    const url2 = c == "www." ? "http://" + url : url;
+    return (
+      '<a class="text-link" href="' + url2 + '" target="_blank">' + url + "</a>"
+    );
+  });
 }

@@ -46,6 +46,15 @@ body {
     outline:  2px solid white;
 }
 
+.text-link {
+    transition: color 0.25s;
+    color: dodgerblue;
+}
+
+.text-link:hover {
+    color: lightskyblue;
+}
+
 .user-item {
     transition: background-color;
     transition-duration: 0.1s;
