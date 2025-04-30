@@ -125,6 +125,7 @@ export function Chat() {
               style={{
                 flexGrow: "1",
                 overflowY: "auto",
+                overflowX: "hidden",
                 padding: "1rem 0rem",
                 scrollbarColor: util.scrollbarColor,
               }}

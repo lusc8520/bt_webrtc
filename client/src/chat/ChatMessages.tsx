@@ -10,6 +10,7 @@ import {
   RemoteChatMessage,
 } from "../context/ChatMessagesContext.tsx";
 import { util } from "../util/util.ts";
+import YouTube from "react-youtube";
 
 export function ChatMessages() {
   const { messages } = useContext(ChatMessagesContext);
@@ -32,7 +33,7 @@ function LocalMessage({ message }: { message: LocalChatMessage }) {
   const { broadCastDelete, broadCastEdit } = useContext(ChatMessagesContext);
   const [isEdit, setIsEdit] = useState(false);
   const [editText, setEditText] = useState(message.text);
-
+  const { html, foundLinks } = urlify(message.text);
   function cancelEdit() {
     setEditText(message.text);
     setIsEdit(false);
@@ -112,7 +113,7 @@ function LocalMessage({ message }: { message: LocalChatMessage }) {
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: "0.25rem",
+          gap: "0.5rem",
           flexGrow: 1,
         }}
       >
@@ -203,10 +204,11 @@ function LocalMessage({ message }: { message: LocalChatMessage }) {
               textWrap: "wrap",
             }}
           >
-            <span dangerouslySetInnerHTML={{ __html: urlify(message.text) }} />
+            <span dangerouslySetInnerHTML={{ __html: html }} />
             {message.edited && <EditedIndicator />}
           </div>
         )}
+        <AdditionalLinks links={foundLinks} />
         <MessageRating message={message} />
       </div>
     </div>
@@ -245,7 +247,7 @@ function MessageRating({ message }: { message: ChatMessage }) {
 
   function getStyle(value: boolean) {
     if (rating === null) return ratingButtonStyle;
-    if (value === rating) return ratingButtonStyleActive;
+    if (value === rating) return ratingButtonStyleActive(value);
     return ratingButtonStyle;
   }
 
@@ -258,7 +260,7 @@ function MessageRating({ message }: { message: ChatMessage }) {
         style={getStyle(true)}
         className="btn"
       >
-        Likes: {likeCount}
+        <span style={arrowStyle}>↑</span> {likeCount}
       </button>
       <button
         onClick={() => {
@@ -267,25 +269,31 @@ function MessageRating({ message }: { message: ChatMessage }) {
         style={getStyle(false)}
         className="btn"
       >
-        Dislikes: {dislikeCount}
+        <span style={arrowStyle}>↓</span> {dislikeCount}
       </button>
     </div>
   );
 }
 
+const arrowStyle: CSSProperties = {
+  fontWeight: "bolder",
+};
+
 const ratingButtonStyle: CSSProperties = {
   borderStyle: "solid",
   borderWidth: "2px",
   margin: 0,
-  padding: "0.5rem 1rem",
+  padding: "0.25rem 1rem",
   borderColor: util.borderColor,
   fontSize: "1rem",
   backgroundColor: "transparent",
 };
 
-const ratingButtonStyleActive: CSSProperties = {
-  ...ratingButtonStyle,
-  backgroundColor: "dodgerblue",
+const ratingButtonStyleActive = (value: boolean) => {
+  return {
+    ...ratingButtonStyle,
+    backgroundColor: value ? "darkgreen" : "darkred",
+  };
 };
 
 function EditedIndicator() {
@@ -305,6 +313,7 @@ function EditedIndicator() {
 function RemoteMessage({ message }: { message: RemoteChatMessage }) {
   const { getPeerInfo } = useContext(PeerInfoContext);
   const peerInfo = getPeerInfo(message.peer.remotePeerId);
+  const { html, foundLinks } = urlify(message.text);
   return (
     <div
       className="user-item"
@@ -313,10 +322,18 @@ function RemoteMessage({ message }: { message: RemoteChatMessage }) {
         display: "flex",
         padding: "0.5rem",
         gap: "1rem",
+        position: "relative",
       }}
     >
       <UserCircle color={peerInfo.color} />
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.5rem",
+          flexGrow: 1,
+        }}
+      >
         <div
           style={{
             color: peerInfo.color,
@@ -326,23 +343,88 @@ function RemoteMessage({ message }: { message: RemoteChatMessage }) {
         >
           {peerInfo.name}
         </div>
-        <div>
-          <span dangerouslySetInnerHTML={{ __html: urlify(message.text) }} />
+        <div
+          style={{
+            wordBreak: "break-word",
+            wordWrap: "break-word",
+            textWrap: "wrap",
+          }}
+        >
+          <span dangerouslySetInnerHTML={{ __html: html }} />
           {message.edited && <EditedIndicator />}
         </div>
+        <AdditionalLinks links={foundLinks} />
         <MessageRating message={message} />
       </div>
     </div>
   );
 }
 
-const urlRegex = /(((https?:\/\/)|(www\.))[^\s]+)/g;
+const urlRegex = /(((https?:\/\/)|(www\.))\S+)/g;
 // https://stackoverflow.com/a/25821576/25311842
 function urlify(text: string) {
-  return text.replace(urlRegex, function (url, b, c) {
-    const url2 = c == "www." ? "http://" + url : url;
+  const foundLinks: string[] = [];
+  const html = text.replace(urlRegex, function (url, _b, c) {
+    const url2 = c == "www." ? "https://" + url : url;
+    foundLinks.push(url2);
     return (
       '<a class="text-link" href="' + url2 + '" target="_blank">' + url + "</a>"
     );
   });
+  return { html, foundLinks };
+}
+function isImageLink(url: string): boolean {
+  return /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(url);
+}
+
+const youTubeRegex =
+  /(youtu.*be.*)\/(watch\?v=|embed\/|v|shorts|)(.*?((?=[&#?])|$))/;
+function extractYoutubeId(url: string) {
+  const matches = youTubeRegex.exec(url);
+  if (matches === null) {
+    return null;
+  }
+  return matches[3];
+}
+
+function AdditionalLinks({ links }: { links: string[] }) {
+  return (
+    <>
+      {links.map((link) => {
+        if (isImageLink(link)) {
+          return (
+            <div
+              style={{
+                flexGrow: 1,
+                maxWidth: "500px",
+              }}
+            >
+              <img
+                style={{
+                  width: "100%",
+                  height: "100%",
+                }}
+                src={link}
+              />
+            </div>
+          );
+        }
+        const youTubeId = extractYoutubeId(link);
+        if (youTubeId != null) {
+          return (
+            <YouTube
+              opts={{ width: "100%", height: "100%" }}
+              style={{
+                flexGrow: 1,
+                maxWidth: "500px",
+                aspectRatio: 16 / 9,
+              }}
+              videoId={youTubeId}
+            />
+          );
+        }
+        return null;
+      })}
+    </>
+  );
 }
