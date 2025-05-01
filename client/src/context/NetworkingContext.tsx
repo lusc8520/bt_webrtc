@@ -15,7 +15,8 @@ import { TurnContext } from "./TurnContext.tsx";
 export type ListenerMessage =
   | { type: "connected" }
   | { type: "disconnected" }
-  | { type: "message"; message: RTCMessage };
+  | { type: "message"; message: RTCMessage }
+  | { type: "file"; data: File };
 type MessageListener = (peer: RemoteRTCPeer, message: ListenerMessage) => void;
 
 type Data = {
@@ -146,7 +147,11 @@ export function NetworkingContextProvider({
           invokeEvent(remoteRTCPeer, { type: "disconnected" });
         },
         onmessage: (message) => {
-          invokeEvent(remoteRTCPeer, { type: "message", message: message });
+          if (message instanceof File) {
+            invokeEvent(remoteRTCPeer, { type: "file", data: message });
+          } else {
+            invokeEvent(remoteRTCPeer, { type: "message", message: message });
+          }
         },
       });
       setPeerConnections((prevState) => {

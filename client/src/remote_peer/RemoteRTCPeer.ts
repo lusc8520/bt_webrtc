@@ -1,4 +1,5 @@
 import { RTCMessage, SendType } from "../types.ts";
+import { FileMessage } from "../binaryMessage.ts";
 
 const reliableConfig: RTCDataChannelInit = {
   ordered: true,
@@ -19,7 +20,7 @@ type ConstructorData = {
   onicecandidate: (event: RTCPeerConnectionIceEvent) => void;
   onopen: () => void;
   onclose: () => void;
-  onmessage: (message: RTCMessage) => void;
+  onmessage: (message: RTCMessage | File) => void;
 };
 
 export class RemoteRTCPeer extends RTCPeerConnection {
@@ -28,7 +29,7 @@ export class RemoteRTCPeer extends RTCPeerConnection {
   public readonly remotePeerId: number;
 
   private readonly onopen: () => void;
-  private readonly onmessage: (message: RTCMessage) => void;
+  private readonly onmessage: (message: RTCMessage | File) => void;
   private readonly onclose: () => void;
 
   public isShutDown = false;
@@ -93,7 +94,9 @@ export class RemoteRTCPeer extends RTCPeerConnection {
       if (typeof event.data === "string") {
         const message = JSON.parse(event.data) as RTCMessage;
         this.onmessage(message);
-      } else {
+      } else if (event.data instanceof DataView) {
+        const file = FileMessage.deserialize(event.data);
+        this.onmessage(file);
         console.warn("message was no string", event.data);
       }
     };
@@ -108,12 +111,16 @@ export class RemoteRTCPeer extends RTCPeerConnection {
     this.close();
   }
 
-  public sendMessage(sendType: SendType, message: RTCMessage) {
+  public sendMessage(sendType: SendType, message: RTCMessage | File) {
     const channel =
       sendType === "reliable"
         ? this.reliableDataChannel
         : this.unreliableDataChannel;
-    channel.send(JSON.stringify(message));
+    if (message instanceof File) {
+      FileMessage.serialize(message).then(channel.send);
+    } else {
+      channel.send(JSON.stringify(message));
+    }
   }
 
   private handleErrors() {

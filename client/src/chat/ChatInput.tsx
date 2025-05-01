@@ -1,14 +1,17 @@
 import { util } from "../util/util.ts";
-import { useContext, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import {
   ChatMessagesContext,
   maxMessageLength,
 } from "../context/ChatMessagesContext.tsx";
+import { FileMessage } from "../binaryMessage.ts";
 
 export function ChatInput() {
   const [text, setText] = useState("");
 
   const { broadCastMessage } = useContext(ChatMessagesContext);
+
+  const inputRef = useRef<HTMLInputElement>(null);
 
   function confirmText() {
     if (text === "") return;
@@ -17,6 +20,21 @@ export function ChatInput() {
   }
   return (
     <div style={{ height: "4rem", display: "flex", gap: "0.5rem" }}>
+      <input
+        ref={inputRef}
+        type="file"
+        onChange={(e) => {
+          const files = e.currentTarget.files;
+          if (files === null) return;
+          const file = files[0];
+          if (file === null) return;
+          const d = FileMessage.serialize(file).then((d) => {
+            const s = FileMessage.deserialize(d);
+            console.warn(s);
+          });
+          inputRef.current!.value = "";
+        }}
+      />
       <input
         className="chat-input"
         style={{
