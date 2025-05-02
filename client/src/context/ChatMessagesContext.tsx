@@ -12,7 +12,7 @@ import { RateMessage } from "../types.ts";
 
 type Data = {
   messages: ChatMessage[];
-  broadCastMessage: (text: string) => void;
+  broadCastMessage: (text: string | File) => void;
   broadCastDelete: (id: number) => void;
   broadCastEdit: (id: number, text: string) => void;
   broadCastLocalRating: (id: number, rating: Rating) => void;
@@ -37,7 +37,7 @@ export type ChatMessage = LocalChatMessage | RemoteChatMessage;
 export const maxMessageLength = 500;
 
 type BaseChatMessage = {
-  text: string;
+  text: string | File;
   id: number;
   edited: boolean;
   localRating: Rating;
@@ -58,7 +58,7 @@ export type RemoteChatMessage = {
 export const scrollDownEvent = new VoidEvent();
 
 export function ChatMessagesProvider({ children }: { children: ReactNode }) {
-  const { subscribeMessage, broadCast, sendToPeer } =
+  const { subscribeMessage, broadCast, sendToPeer, broadCastFileMessage } =
     useContext(NetworkingContext);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -100,6 +100,16 @@ export function ChatMessagesProvider({ children }: { children: ReactNode }) {
             message.remoteRatings.delete(peer.remotePeerId);
             return message;
           });
+        });
+      } else if (message.type === "file") {
+        addMessage({
+          type: "remote",
+          text: message.file,
+          edited: false,
+          localRating: null,
+          remoteRatings: new Map(),
+          peer: peer,
+          id: message.id,
         });
       }
     });
@@ -252,7 +262,7 @@ export function ChatMessagesProvider({ children }: { children: ReactNode }) {
     editLocalMessage(id, text);
   }
 
-  function broadCastMessage(text: string) {
+  function broadCastMessage(text: string | File) {
     setTimeout(() => {
       invokeScrollDown();
     }, 50);
@@ -265,7 +275,11 @@ export function ChatMessagesProvider({ children }: { children: ReactNode }) {
         localRating: null,
         remoteRatings: new Map(),
       });
-      broadCast("reliable", { pType: "chatMessage", text, id: prevState });
+      if (typeof text === "string") {
+        broadCast("reliable", { pType: "chatMessage", text, id: prevState });
+      } else {
+        broadCastFileMessage(text, prevState);
+      }
       return prevState + 1;
     });
   }

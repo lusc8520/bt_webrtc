@@ -4,7 +4,7 @@ import {
   ChatMessagesContext,
   maxMessageLength,
 } from "../context/ChatMessagesContext.tsx";
-import { FileMessage } from "../binaryMessage.ts";
+import { FileUploadSvg } from "../svg.tsx";
 
 export function ChatInput() {
   const [text, setText] = useState("");
@@ -21,6 +21,7 @@ export function ChatInput() {
   return (
     <div style={{ height: "4rem", display: "flex", gap: "0.5rem" }}>
       <input
+        style={{ display: "none" }}
         ref={inputRef}
         type="file"
         onChange={(e) => {
@@ -28,13 +29,29 @@ export function ChatInput() {
           if (files === null) return;
           const file = files[0];
           if (file === null) return;
-          const d = FileMessage.serialize(file).then((d) => {
-            const s = FileMessage.deserialize(d);
-            console.warn(s);
-          });
+          broadCastMessage(file);
           inputRef.current!.value = "";
         }}
       />
+      <button
+        style={{
+          alignSelf: "center",
+          width: "3rem",
+          aspectRatio: 1,
+          backgroundColor: "transparent",
+          borderStyle: "solid",
+          borderColor: util.borderColor,
+          borderWidth: 1,
+          padding: 0,
+          margin: 0,
+        }}
+        className="btn"
+        onClick={() => {
+          inputRef.current?.click();
+        }}
+      >
+        <FileUploadSvg />
+      </button>
       <input
         className="chat-input"
         style={{

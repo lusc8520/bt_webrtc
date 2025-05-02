@@ -16,7 +16,7 @@ export type ListenerMessage =
   | { type: "connected" }
   | { type: "disconnected" }
   | { type: "message"; message: RTCMessage }
-  | { type: "file"; data: File };
+  | { type: "file"; file: File; id: number };
 type MessageListener = (peer: RemoteRTCPeer, message: ListenerMessage) => void;
 
 type Data = {
@@ -24,6 +24,7 @@ type Data = {
   sendToPeer: (peerId: number, sendType: SendType, message: RTCMessage) => void;
   subscribeMessage: (listener: MessageListener) => void;
   connectedPeers: Map<number, RemoteRTCPeer>;
+  broadCastFileMessage: (file: File, id: number) => void;
 };
 
 export const NetworkingContext = createContext<Data>({
@@ -31,6 +32,7 @@ export const NetworkingContext = createContext<Data>({
   subscribeMessage: () => {},
   connectedPeers: new Map(),
   sendToPeer: () => {},
+  broadCastFileMessage: () => {},
 });
 
 const wsUrl = "ws://localhost:8080";
@@ -72,6 +74,15 @@ export function NetworkingContextProvider({
       peer.shutDown();
     }
   }, [peerConnections, signalingServer, connectedPeers]);
+
+  const broadCastFileMessage = useCallback(
+    (file: File, id: number) => {
+      for (const peer of connectedPeers.values()) {
+        peer.sendFileMessage(file, id);
+      }
+    },
+    [connectedPeers],
+  );
 
   const broadCast = useCallback(
     (sendType: SendType, message: RTCMessage) => {
@@ -147,11 +158,10 @@ export function NetworkingContextProvider({
           invokeEvent(remoteRTCPeer, { type: "disconnected" });
         },
         onmessage: (message) => {
-          if (message instanceof File) {
-            invokeEvent(remoteRTCPeer, { type: "file", data: message });
-          } else {
-            invokeEvent(remoteRTCPeer, { type: "message", message: message });
-          }
+          invokeEvent(remoteRTCPeer, { type: "message", message: message });
+        },
+        onFile: (file, id) => {
+          invokeEvent(remoteRTCPeer, { type: "file", id, file });
         },
       });
       setPeerConnections((prevState) => {
@@ -226,7 +236,13 @@ export function NetworkingContextProvider({
 
   return (
     <NetworkingContext.Provider
-      value={{ broadCast, subscribeMessage, connectedPeers, sendToPeer }}
+      value={{
+        broadCast,
+        subscribeMessage,
+        connectedPeers,
+        sendToPeer,
+        broadCastFileMessage,
+      }}
     >
       {children}
     </NetworkingContext.Provider>

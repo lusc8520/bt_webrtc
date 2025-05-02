@@ -33,13 +33,17 @@ function LocalMessage({ message }: { message: LocalChatMessage }) {
   const { broadCastDelete, broadCastEdit } = useContext(ChatMessagesContext);
   const [isEdit, setIsEdit] = useState(false);
   const [editText, setEditText] = useState(message.text);
-  const { html, foundLinks } = urlify(message.text);
+  const { html, foundLinks } =
+    typeof message.text === "string"
+      ? urlify(message.text)
+      : { html: message.text, foundLinks: [] };
   function cancelEdit() {
     setEditText(message.text);
     setIsEdit(false);
   }
 
   function confirmEdit() {
+    if (editText instanceof File) return;
     if (editText === "" || editText === message.text) {
       cancelEdit();
       return;
@@ -76,22 +80,25 @@ function LocalMessage({ message }: { message: LocalChatMessage }) {
           gap: "0.5rem",
         }}
       >
-        <button
-          className="btn deleteButton"
-          style={{
-            fontSize: "1rem",
-            backgroundColor: "dodgerblue",
-            padding: "0.2rem 0.5rem",
-            margin: "0",
-            border: "none",
-            borderRadius: "0.2rem",
-          }}
-          onClick={() => {
-            setIsEdit(true);
-          }}
-        >
-          Edit
-        </button>
+        {typeof message.text === "string" && (
+          <button
+            className="btn deleteButton"
+            style={{
+              fontSize: "1rem",
+              backgroundColor: "dodgerblue",
+              padding: "0.2rem 0.5rem",
+              margin: "0",
+              border: "none",
+              borderRadius: "0.2rem",
+            }}
+            onClick={() => {
+              setIsEdit(true);
+            }}
+          >
+            Edit
+          </button>
+        )}
+
         <button
           className="btn deleteButton"
           style={{
@@ -135,7 +142,7 @@ function LocalMessage({ message }: { message: LocalChatMessage }) {
             }}
           >
             <input
-              value={editText}
+              value={typeof message.text === "string" ? message.text : ""}
               className="chat-input"
               style={{
                 color: "white",
@@ -204,7 +211,7 @@ function LocalMessage({ message }: { message: LocalChatMessage }) {
               textWrap: "wrap",
             }}
           >
-            <span dangerouslySetInnerHTML={{ __html: html }} />
+            <MessageContent content={html} />
             {message.edited && <EditedIndicator />}
           </div>
         )}
@@ -213,6 +220,38 @@ function LocalMessage({ message }: { message: LocalChatMessage }) {
       </div>
     </div>
   );
+}
+
+function MessageContent({ content }: { content: string | File }) {
+  if (content instanceof File) {
+    const url = URL.createObjectURL(content);
+    if (isImageLink(content.name)) {
+      return (
+        <div
+          style={{
+            maxWidth: "500px",
+          }}
+        >
+          <img style={{ maxWidth: "100%", height: "auto" }} src={url} />
+        </div>
+      );
+    }
+    return (
+      <div>
+        file:{" "}
+        <a
+          href={url}
+          className="text-link"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {content.name}
+        </a>
+      </div>
+    );
+  } else {
+    return <span dangerouslySetInnerHTML={{ __html: content }} />;
+  }
 }
 
 function MessageRating({ message }: { message: ChatMessage }) {
@@ -313,7 +352,10 @@ function EditedIndicator() {
 function RemoteMessage({ message }: { message: RemoteChatMessage }) {
   const { getPeerInfo } = useContext(PeerInfoContext);
   const peerInfo = getPeerInfo(message.peer.remotePeerId);
-  const { html, foundLinks } = urlify(message.text);
+  const { html, foundLinks } =
+    typeof message.text === "string"
+      ? urlify(message.text)
+      : { html: message.text, foundLinks: [] };
   return (
     <div
       className="user-item"
@@ -350,7 +392,7 @@ function RemoteMessage({ message }: { message: RemoteChatMessage }) {
             textWrap: "wrap",
           }}
         >
-          <span dangerouslySetInnerHTML={{ __html: html }} />
+          <MessageContent content={html} />
           {message.edited && <EditedIndicator />}
         </div>
         <AdditionalLinks links={foundLinks} />

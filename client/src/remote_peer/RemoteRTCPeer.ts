@@ -20,7 +20,8 @@ type ConstructorData = {
   onicecandidate: (event: RTCPeerConnectionIceEvent) => void;
   onopen: () => void;
   onclose: () => void;
-  onmessage: (message: RTCMessage | File) => void;
+  onmessage: (message: RTCMessage) => void;
+  onFile: (file: File, id: number) => void;
 };
 
 export class RemoteRTCPeer extends RTCPeerConnection {
@@ -29,8 +30,9 @@ export class RemoteRTCPeer extends RTCPeerConnection {
   public readonly remotePeerId: number;
 
   private readonly onopen: () => void;
-  private readonly onmessage: (message: RTCMessage | File) => void;
+  private readonly onmessage: (message: RTCMessage) => void;
   private readonly onclose: () => void;
+  private readonly onFile: (file: File, id: number) => void;
 
   public isShutDown = false;
 
@@ -42,6 +44,7 @@ export class RemoteRTCPeer extends RTCPeerConnection {
     onopen,
     onclose,
     onmessage,
+    onFile,
   }: ConstructorData) {
     super(config);
     this.handleErrors();
@@ -51,6 +54,7 @@ export class RemoteRTCPeer extends RTCPeerConnection {
     this.onopen = onopen;
     this.onclose = onclose;
     this.onmessage = onmessage;
+    this.onFile = onFile;
     this.reliableDataChannel = this.createDataChannel(
       "reliable",
       reliableConfig,
@@ -94,10 +98,10 @@ export class RemoteRTCPeer extends RTCPeerConnection {
       if (typeof event.data === "string") {
         const message = JSON.parse(event.data) as RTCMessage;
         this.onmessage(message);
-      } else if (event.data instanceof DataView) {
-        const file = FileMessage.deserialize(event.data);
-        this.onmessage(file);
-        console.warn("message was no string", event.data);
+      } else if (event.data instanceof ArrayBuffer) {
+        const dataView = new DataView(event.data);
+        const fileData = FileMessage.deserialize(dataView);
+        this.onFile(fileData.file, fileData.id);
       }
     };
   }
@@ -111,16 +115,22 @@ export class RemoteRTCPeer extends RTCPeerConnection {
     this.close();
   }
 
-  public sendMessage(sendType: SendType, message: RTCMessage | File) {
+  public sendFileMessage(file: File, id: number) {
+    if (file.size > (this.sctp?.maxMessageSize ?? -1)) {
+      console.error("FILE TOO LARGE! not sending");
+      return;
+    }
+    FileMessage.serialize(file, id).then((data) =>
+      this.reliableDataChannel.send(data),
+    );
+  }
+
+  public sendMessage(sendType: SendType, message: RTCMessage) {
     const channel =
       sendType === "reliable"
         ? this.reliableDataChannel
         : this.unreliableDataChannel;
-    if (message instanceof File) {
-      FileMessage.serialize(message).then(channel.send);
-    } else {
-      channel.send(JSON.stringify(message));
-    }
+    channel.send(JSON.stringify(message));
   }
 
   private handleErrors() {
