@@ -80,7 +80,7 @@ function LocalMessage({ message }: { message: LocalChatMessage }) {
           gap: "0.5rem",
         }}
       >
-        {typeof message.text === "string" && (
+        {message.canBeEdited && (
           <button
             className="btn deleteButton"
             style={{
@@ -99,22 +99,24 @@ function LocalMessage({ message }: { message: LocalChatMessage }) {
           </button>
         )}
 
-        <button
-          className="btn deleteButton"
-          style={{
-            fontSize: "1rem",
-            backgroundColor: "indianred",
-            padding: "0.2rem 0.5rem",
-            margin: "0",
-            border: "none",
-            borderRadius: "0.2rem",
-          }}
-          onClick={() => {
-            broadCastDelete(message.id);
-          }}
-        >
-          Delete
-        </button>
+        {message.canBeDeleted && (
+          <button
+            className="btn deleteButton"
+            style={{
+              fontSize: "1rem",
+              backgroundColor: "indianred",
+              padding: "0.2rem 0.5rem",
+              margin: "0",
+              border: "none",
+              borderRadius: "0.2rem",
+            }}
+            onClick={() => {
+              broadCastDelete(message.id);
+            }}
+          >
+            Delete
+          </button>
+        )}
       </div>
       <div
         style={{
@@ -142,7 +144,7 @@ function LocalMessage({ message }: { message: LocalChatMessage }) {
             }}
           >
             <input
-              value={typeof message.text === "string" ? message.text : ""}
+              value={typeof editText === "string" ? editText : ""}
               className="chat-input"
               style={{
                 color: "white",
@@ -261,7 +263,6 @@ function MessageRating({ message }: { message: ChatMessage }) {
 
   function updateRating(r: Rating) {
     const newRating = r === rating ? null : r;
-    console.warn(newRating);
     setRating(newRating);
     if (message.type === "local") {
       broadCastLocalRating(message.id, newRating);

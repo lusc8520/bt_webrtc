@@ -48,6 +48,8 @@ export type Rating = boolean | null;
 
 export type LocalChatMessage = {
   type: "local";
+  canBeEdited: boolean;
+  canBeDeleted: boolean;
 } & BaseChatMessage;
 
 export type RemoteChatMessage = {
@@ -267,18 +269,51 @@ export function ChatMessagesProvider({ children }: { children: ReactNode }) {
       invokeScrollDown();
     }, 50);
     setMessageId((prevState) => {
-      addMessage({
-        type: "local",
-        text,
-        id: prevState,
-        edited: false,
-        localRating: null,
-        remoteRatings: new Map(),
-      });
       if (typeof text === "string") {
         broadCast("reliable", { pType: "chatMessage", text, id: prevState });
+        addMessage({
+          type: "local",
+          text,
+          id: prevState,
+          edited: false,
+          localRating: null,
+          remoteRatings: new Map(),
+          canBeEdited: true,
+          canBeDeleted: true,
+        });
       } else {
-        broadCastFileMessage(text, prevState);
+        broadCastFileMessage(text, prevState, {
+          onFail: () => {
+            const failText = "I tried to send a file but it is too large :(";
+            broadCast("reliable", {
+              pType: "chatMessage",
+              text: failText,
+              id: prevState,
+            });
+            addMessage({
+              type: "local",
+              text: failText,
+              id: prevState,
+              localRating: null,
+              remoteRatings: new Map(),
+              edited: false,
+              canBeEdited: false,
+              canBeDeleted: false,
+            });
+          },
+          onSuccess: () => {
+            addMessage({
+              type: "local",
+              text,
+              id: prevState,
+              edited: false,
+              localRating: null,
+              remoteRatings: new Map(),
+              canBeEdited: false,
+              canBeDeleted: true,
+            });
+          },
+        });
       }
       return prevState + 1;
     });

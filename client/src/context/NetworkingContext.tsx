@@ -24,7 +24,11 @@ type Data = {
   sendToPeer: (peerId: number, sendType: SendType, message: RTCMessage) => void;
   subscribeMessage: (listener: MessageListener) => void;
   connectedPeers: Map<number, RemoteRTCPeer>;
-  broadCastFileMessage: (file: File, id: number) => void;
+  broadCastFileMessage: (
+    file: File,
+    id: number,
+    callbacks: { onSuccess: () => void; onFail: () => void },
+  ) => void;
 };
 
 export const NetworkingContext = createContext<Data>({
@@ -76,10 +80,19 @@ export function NetworkingContextProvider({
   }, [peerConnections, signalingServer, connectedPeers]);
 
   const broadCastFileMessage = useCallback(
-    (file: File, id: number) => {
+    (
+      file: File,
+      id: number,
+      callbacks: { onSuccess: () => void; onFail: () => void },
+    ) => {
       for (const peer of connectedPeers.values()) {
-        peer.sendFileMessage(file, id);
+        const success = peer.sendFileMessage(file, id);
+        if (!success) {
+          callbacks.onFail();
+          return;
+        }
       }
+      callbacks.onSuccess();
     },
     [connectedPeers],
   );

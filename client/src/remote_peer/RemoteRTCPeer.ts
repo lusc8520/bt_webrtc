@@ -115,14 +115,15 @@ export class RemoteRTCPeer extends RTCPeerConnection {
     this.close();
   }
 
-  public sendFileMessage(file: File, id: number) {
+  public sendFileMessage(file: File, id: number): boolean {
     if (file.size > (this.sctp?.maxMessageSize ?? -1)) {
       console.error("FILE TOO LARGE! not sending");
-      return;
+      return false;
     }
-    FileMessage.serialize(file, id).then((data) =>
-      this.reliableDataChannel.send(data),
-    );
+    FileMessage.serialize(file, id).then((data) => {
+      this.reliableDataChannel.send(data);
+    });
+    return true;
   }
 
   public sendMessage(sendType: SendType, message: RTCMessage) {
