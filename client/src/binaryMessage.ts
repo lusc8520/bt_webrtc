@@ -4,7 +4,7 @@ export class FileMessage {
     // read id
     const id = data.getUint32(offset);
     offset += 4;
-    // read file name byte count
+    // read file name char count
     const fileNameCharCount = data.getUint32(offset) / 2;
     offset += 4;
     // read file name
@@ -14,7 +14,7 @@ export class FileMessage {
       fileName += String.fromCharCode(charCode);
       offset += 2;
     }
-    // read file type byte count
+    // read file type char count
     const fileTypeCharCount = data.getUint32(offset) / 2;
     offset += 4;
     let fileType = "";

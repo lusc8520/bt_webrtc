@@ -1,4 +1,4 @@
-import { CSSProperties, useContext, useState } from "react";
+import { CSSProperties, useContext, useEffect, useRef, useState } from "react";
 import { UserCircle } from "./RemotePeerList.tsx";
 import { PeerInfoContext } from "../context/PeerInfoContext.tsx";
 import {
@@ -8,9 +8,11 @@ import {
   maxMessageLength,
   Rating,
   RemoteChatMessage,
+  scrollDownEvent,
 } from "../context/ChatMessagesContext.tsx";
 import { util } from "../util/util.ts";
 import YouTube from "react-youtube";
+import { ChatInput } from "./ChatInput.tsx";
 
 export function ChatMessages() {
   const { messages } = useContext(ChatMessagesContext);
@@ -24,6 +26,55 @@ export function ChatMessages() {
           return <RemoteMessage key={index} message={message} />;
         }
       })}
+    </div>
+  );
+}
+
+export function ChatTab() {
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  function scrollSmooth() {
+    scrollDown("smooth");
+  }
+
+  useEffect(() => {
+    scrollDownEvent.addEventListener(scrollSmooth);
+    return () => {
+      scrollDownEvent.removeEventListener(scrollSmooth);
+    };
+  }, []);
+
+  function scrollDown(behaviour: ScrollBehavior) {
+    const div = messagesContainerRef.current!;
+    div.scrollTo({ top: div.scrollHeight, behavior: behaviour });
+  }
+
+  return (
+    <div
+      id="chat-window"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        flexGrow: "1",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        id="messages-container"
+        ref={messagesContainerRef}
+        style={{
+          flexGrow: "1",
+          overflowY: "auto",
+          overflowX: "hidden",
+          padding: "1rem 0rem",
+          scrollbarColor: util.scrollbarColor,
+        }}
+      >
+        <ChatMessages />
+      </div>
+      <div style={{ padding: "1rem 0.5rem", paddingTop: "0" }}>
+        <ChatInput />
+      </div>
     </div>
   );
 }

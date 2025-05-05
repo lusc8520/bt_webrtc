@@ -1,9 +1,9 @@
-import { Chat } from "./chat/Chat.tsx";
 import { NetworkingContextProvider } from "./context/NetworkingContext.tsx";
 import { PeerInfoContextProvider } from "./context/PeerInfoContext.tsx";
 import { DrawingContextProvider } from "./context/DrawingContext.tsx";
 import { ChatMessagesProvider } from "./context/ChatMessagesContext.tsx";
 import { TurnContextProvider } from "./context/TurnContext.tsx";
+import { AppLayout } from "./AppLayout.tsx";
 
 export function App() {
   return (
@@ -12,7 +12,7 @@ export function App() {
         <PeerInfoContextProvider>
           <ChatMessagesProvider>
             <DrawingContextProvider>
-              <Chat />
+              <AppLayout />
             </DrawingContextProvider>
           </ChatMessagesProvider>
         </PeerInfoContextProvider>
