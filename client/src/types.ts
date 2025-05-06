@@ -1,4 +1,5 @@
 import { PeerInfo } from "./context/PeerInfoContext.tsx";
+import { GameMessage } from "./context/GameContext.tsx";
 
 export type SendType = "reliable" | "unreliable";
 
@@ -22,7 +23,8 @@ export type RTCMessage =
       pType: "draw";
       isDrawing: boolean;
       position: Vector2;
-    };
+    }
+  | { pType: "game"; gameMessage: GameMessage };
 
 export function getRandomInt(max: number): number {
   return Math.floor(Math.random() * max);
@@ -31,6 +33,25 @@ export function getRandomInt(max: number): number {
 export type Vector2 = {
   x: number;
   y: number;
+};
+
+export const Vectors = {
+  right: {
+    x: 1,
+    y: 0,
+  },
+  down: {
+    x: 0,
+    y: 1,
+  },
+  left: {
+    x: -1,
+    y: 0,
+  },
+  up: {
+    x: 0,
+    y: -1,
+  },
 };
 
 export type RateMessage =
