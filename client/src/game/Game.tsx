@@ -1,11 +1,14 @@
-import { useContext, useEffect, useState } from "react";
-import { GameContext } from "../context/GameContext.tsx";
+import { memo, useContext, useEffect } from "react";
 import { PeerInfoContext } from "../context/PeerInfoContext.tsx";
-import { Vector2, Vectors } from "../types.ts";
-import { util } from "../util/util.ts";
+import { Vectors } from "../types.ts";
+import {
+  GameConstants,
+  GameContext,
+  PlayerState,
+} from "../context/GameContext.tsx";
 
-const gameFieldSize = 100;
-const cellCount = 20;
+const gameFieldSize = GameConstants.gameFieldSize;
+const cellCount = GameConstants.cellCount;
 const cellSize = gameFieldSize / cellCount;
 
 const gameGrid: number[][] = Array.from({ length: cellCount }, () =>
@@ -13,8 +16,7 @@ const gameGrid: number[][] = Array.from({ length: cellCount }, () =>
 );
 
 export function Game() {
-  const [pos, setPos] = useState<Vector2>({ x: 0, y: 0 });
-  const { localPeerInfo } = useContext(PeerInfoContext);
+  const { move, remoteStates } = useContext(GameContext);
 
   useEffect(() => {
     document.onkeydown = (e) => {
@@ -31,15 +33,6 @@ export function Game() {
       }
     };
   }, []);
-
-  function move(dir: Vector2) {
-    setPos((prevPos) => {
-      return {
-        x: util.clamp(prevPos.x + dir.x, 0, cellCount),
-        y: util.clamp(prevPos.y + dir.y, 0, cellCount),
-      };
-    });
-  }
 
   return (
     <div
@@ -69,61 +62,98 @@ export function Game() {
             maxHeight: "100%",
           }}
         >
-          {gameGrid.map((row, x) => {
-            return row.map((cell, y) => {
-              return (
-                <g
-                  key={`${x}${y}`}
-                  transform={`translate(${x * cellSize}, ${y * cellSize})`}
-                >
-                  <rect fill="none" width={cellSize} height={cellSize} />
-                  {/*outline*/}
-                  <line
-                    x2={cellSize}
-                    stroke="darkslategray"
-                    strokeWidth={y === 0 ? strokeW : strokeW / 2}
-                  />
-                  <line
-                    y1={cellSize}
-                    x2={cellSize}
-                    y2={cellSize}
-                    stroke="darkslategray"
-                    strokeWidth={y === cellCount - 1 ? strokeW : strokeW / 2}
-                  />
-                  <line
-                    y2={cellSize}
-                    stroke="darkslategray"
-                    strokeWidth={x === 0 ? strokeW : strokeW / 2}
-                  />
-                  <line
-                    x1={cellSize}
-                    x2={cellSize}
-                    y2={cellSize}
-                    stroke="darkslategray"
-                    strokeWidth={x === cellCount - 1 ? strokeW : strokeW / 2}
-                  />
-                </g>
-              );
-            });
+          <GameGrid />
+          {[...remoteStates].map(([id, state]) => {
+            return <RemotePlayer key={id} peerId={id} state={state} />;
           })}
-          <g
-            style={{
-              transition: "transform 0.1s",
-            }}
-            transform={`translate(${pos.x * cellSize + cellSize / 2}, ${pos.y * cellSize + cellSize / 2})`}
-          >
-            <rect
-              x={-cellSize / 4}
-              y={-cellSize / 4}
-              width={cellSize / 2}
-              height={cellSize / 2}
-              fill={localPeerInfo.color}
-            />
-          </g>
+          <LocalPlayer />
         </svg>
       </div>
     </div>
   );
 }
+
+function LocalPlayer() {
+  const { localState } = useContext(GameContext);
+  const { localPeerInfo } = useContext(PeerInfoContext);
+  const pos = localState.gridPos;
+  return (
+    <g
+      style={{
+        transition: "transform 0.1s",
+      }}
+      transform={`translate(${pos.x * cellSize + cellSize / 2}, ${pos.y * cellSize + cellSize / 2})`}
+    >
+      <rect
+        x={-cellSize / 4}
+        y={-cellSize / 4}
+        width={cellSize / 2}
+        height={cellSize / 2}
+        fill={localPeerInfo.color}
+      />
+    </g>
+  );
+}
+
+function RemotePlayer({
+  peerId,
+  state,
+}: {
+  peerId: number;
+  state: PlayerState;
+}) {
+  const pos = state.gridPos;
+  const { getPeerInfo } = useContext(PeerInfoContext);
+  return (
+    <g
+      style={{
+        transition: "transform 0.1s",
+      }}
+      transform={`translate(${pos.x * cellSize + cellSize / 2}, ${pos.y * cellSize + cellSize / 2})`}
+    >
+      <circle r={cellSize / 4} fill={getPeerInfo(peerId).color} />
+    </g>
+  );
+}
+
+const GameGrid = memo(() => {
+  return gameGrid.map((row, x) => {
+    return row.map((_cell, y) => {
+      return (
+        <g
+          key={`${x}${y}`}
+          transform={`translate(${x * cellSize}, ${y * cellSize})`}
+        >
+          <rect fill="none" width={cellSize} height={cellSize} />
+          {/*outline*/}
+          <line
+            x2={cellSize}
+            stroke="darkslategray"
+            strokeWidth={y === 0 ? strokeW : strokeW / 2}
+          />
+          <line
+            y1={cellSize}
+            x2={cellSize}
+            y2={cellSize}
+            stroke="darkslategray"
+            strokeWidth={y === cellCount - 1 ? strokeW : strokeW / 2}
+          />
+          <line
+            y2={cellSize}
+            stroke="darkslategray"
+            strokeWidth={x === 0 ? strokeW : strokeW / 2}
+          />
+          <line
+            x1={cellSize}
+            x2={cellSize}
+            y2={cellSize}
+            stroke="darkslategray"
+            strokeWidth={x === cellCount - 1 ? strokeW : strokeW / 2}
+          />
+        </g>
+      );
+    });
+  });
+});
 
 const strokeW = 0.3;

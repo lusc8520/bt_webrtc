@@ -52,6 +52,9 @@ export const Vectors = {
     x: 0,
     y: -1,
   },
+  equals: (vec1: Vector2, vec2: Vector2) => {
+    return vec1.x === vec2.x && vec1.y === vec2.y;
+  },
 };
 
 export type RateMessage =

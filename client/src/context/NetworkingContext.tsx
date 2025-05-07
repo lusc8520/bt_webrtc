@@ -11,6 +11,7 @@ import {
 } from "react";
 import { ClientMessage, ServerMessage } from "../../../contract/sharedTypes.ts";
 import { TurnContext } from "./TurnContext.tsx";
+import { TypeEvent } from "../util/event.ts";
 
 export type ListenerMessage =
   | { type: "connected" }
@@ -30,6 +31,11 @@ type Data = {
     callbacks: { onSuccess: () => void; onFail: () => void },
   ) => void;
 };
+
+export const onMessage = new TypeEvent<{
+  peer: RemoteRTCPeer;
+  message: ListenerMessage;
+}>();
 
 export const NetworkingContext = createContext<Data>({
   broadCast: () => {},
@@ -117,6 +123,7 @@ export function NetworkingContextProvider({
     for (const listener of messageListeners.current) {
       listener(peer, param);
     }
+    onMessage.invoke({ peer, message: param });
   }
 
   useEffect(() => {
