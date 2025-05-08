@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useEffect, useState } from "react";
-import { env } from "../env.ts";
+import { Env } from "../env.ts";
 
 const nullTurnServer: RTCIceServer = { urls: "" };
 
@@ -16,7 +16,7 @@ export function TurnContextProvider({ children }: { children: ReactNode }) {
 
   async function init() {
     try {
-      const res = await fetch(`${env.baseUrl}/api/turn`);
+      const res = await fetch(`${Env.baseUrl}/api/turn`);
       const iceServer = (await res.json()) as RTCIceServer;
       console.warn("retrieved ice server:", iceServer);
       setTurnServer(iceServer);

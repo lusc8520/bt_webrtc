@@ -12,7 +12,7 @@ import {
 import { ClientMessage, ServerMessage } from "../../../contract/sharedTypes.ts";
 import { TurnContext } from "./TurnContext.tsx";
 import { TypeEvent } from "../util/event.ts";
-import { env } from "../env.ts";
+import { Env } from "../env.ts";
 
 export type ListenerMessage =
   | { type: "connected" }
@@ -225,7 +225,7 @@ export function NetworkingContextProvider({
 
   useEffect(() => {
     console.warn("connecting to signaling server...");
-    setSignalingServer(new WebSocket(env.baseUrl));
+    setSignalingServer(new WebSocket(Env.wsBaseUrl));
   }, []);
 
   if (signalingServer != undefined) {

@@ -1,9 +1,9 @@
-export const env = {
-  baseUrl: getBaseUrl(),
-};
+export abstract class Env {
+  static baseUrl = import.meta.env.DEV
+    ? "http://localhost:3000"
+    : "https://shuneman.net";
 
-function getBaseUrl() {
-  return import.meta.env.DEV
+  static wsBaseUrl = import.meta.env.DEV
     ? "http://localhost:3000"
     : "https://shuneman.net/ws";
 }
