@@ -3,10 +3,15 @@ import express from "express";
 import { Client } from "./types";
 import { ClientMessage, wait } from "../contract/sharedTypes";
 import cors from "cors";
+import path from "node:path";
+
+const staticDir = path.join(__dirname, "../client/dist");
+const port = 3000;
 
 // boilerplate for setting up http server with websocket server ...
 const expressApp = express();
 expressApp.use(cors({ origin: "*" }));
+expressApp.use(express.static(staticDir));
 // simulated turn service usage
 expressApp.get("/api/turn", async (req, res) => {
   async function fetchSimulatedTurnConfig(): Promise<RTCIceServer> {
@@ -25,8 +30,13 @@ expressApp.get("/api/turn", async (req, res) => {
   const config = await fetchSimulatedTurnConfig();
   res.json(config);
 });
-const httpServer = expressApp.listen(8080, () => {
-  console.log("Express server listening on 8080");
+
+expressApp.get(/(.*)/, (_, res) => {
+  res.sendFile(path.join(staticDir, "index.html"));
+});
+
+const httpServer = expressApp.listen(port, () => {
+  console.log(`Express server listening on ${port}`);
 });
 const websocketServer = new WebSocketServer({ server: httpServer });
 

@@ -16,7 +16,7 @@ import { RemoteRTCPeer } from "../remote_peer/RemoteRTCPeer.ts";
 import { util } from "../util/util.ts";
 
 type GameContextProps = {
-  localState: PlayerState;
+  localState: LocalPlayerState;
   remoteStates: Map<number, PlayerState>;
   move: (dir: Vector2) => void;
 };
@@ -25,9 +25,14 @@ export type PlayerState = {
   gridPos: Vector2;
 };
 
+export type LocalPlayerState = {
+  isMoving: boolean;
+} & PlayerState;
+
 export abstract class GameConstants {
   static gameFieldSize = 100;
   static cellCount = 15;
+  static moveDuration = 100;
   // static cellSize = GameConstants.gameFieldSize / GameConstants.cellCount;
   //
   // static gameGrid: number[][] = Array.from(
@@ -39,6 +44,7 @@ export abstract class GameConstants {
 export const GameContext = createContext<GameContextProps>({
   localState: {
     gridPos: { x: 0, y: 0 },
+    isMoving: false,
   },
   remoteStates: new Map(),
   move: () => {},
@@ -47,11 +53,12 @@ export const GameContext = createContext<GameContextProps>({
 export function GameContextProvider({ children }: { children: ReactNode }) {
   const { broadCast } = useContext(NetworkingContext);
 
-  const [localState, setLocalState] = useState<PlayerState>({
+  const [localState, setLocalState] = useState<LocalPlayerState>({
     gridPos: util.getRandomVector2(GameConstants.cellCount),
+    isMoving: false,
   });
 
-  const localStateRef = useRef<PlayerState>(localState);
+  const localStateRef = useRef<LocalPlayerState>(localState);
 
   const [remoteStates, setRemoteStates] = useState<Map<number, PlayerState>>(
     new Map(),
@@ -98,6 +105,7 @@ export function GameContextProvider({ children }: { children: ReactNode }) {
 
   function move(dir: Vector2) {
     setLocalState((prev) => {
+      if (prev.isMoving) return prev;
       const prevPos = prev.gridPos;
       const newPos: Vector2 = {
         x: util.clamp(prevPos.x + dir.x, 0, GameConstants.cellCount - 1),
@@ -110,9 +118,15 @@ export function GameContextProvider({ children }: { children: ReactNode }) {
           type: "move",
           direction: dir,
         });
+        setTimeout(() => {
+          setLocalState((prev) => {
+            return { ...prev, isMoving: false };
+          });
+        }, GameConstants.moveDuration);
         return {
           ...prev,
           gridPos: newPos,
+          isMoving: true,
         };
       }
     });

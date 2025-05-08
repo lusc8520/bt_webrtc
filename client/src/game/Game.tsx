@@ -54,7 +54,6 @@ export function Game() {
         }}
       >
         <svg
-          shapeRendering="crispEdges"
           className="noselect"
           viewBox={`0 0 ${gameFieldSize} ${gameFieldSize}`}
           style={{
@@ -90,6 +89,8 @@ function LocalPlayer() {
         width={cellSize / 2}
         height={cellSize / 2}
         fill={localPeerInfo.color}
+        stroke="white"
+        strokeWidth="0.2"
       />
     </g>
   );

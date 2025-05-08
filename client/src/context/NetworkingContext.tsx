@@ -12,6 +12,7 @@ import {
 import { ClientMessage, ServerMessage } from "../../../contract/sharedTypes.ts";
 import { TurnContext } from "./TurnContext.tsx";
 import { TypeEvent } from "../util/event.ts";
+import { env } from "../env.ts";
 
 export type ListenerMessage =
   | { type: "connected" }
@@ -45,7 +46,6 @@ export const NetworkingContext = createContext<Data>({
   broadCastFileMessage: () => {},
 });
 
-const wsUrl = "ws://localhost:8080";
 export function NetworkingContextProvider({
   children,
 }: {
@@ -225,7 +225,7 @@ export function NetworkingContextProvider({
 
   useEffect(() => {
     console.warn("connecting to signaling server...");
-    setSignalingServer(new WebSocket(wsUrl));
+    setSignalingServer(new WebSocket(env.baseUrl));
   }, []);
 
   if (signalingServer != undefined) {
