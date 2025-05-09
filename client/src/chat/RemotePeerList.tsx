@@ -4,6 +4,7 @@ import {
   PeerInfoContext,
   possibleColors,
 } from "../context/PeerInfoContext.tsx";
+import { TypeEvent } from "../util/event.ts";
 
 export function RemotePeerList() {
   const { connectedPeers } = useContext(NetworkingContext);
@@ -80,6 +81,8 @@ export function UserCircle({ color }: { color: string }) {
   );
 }
 
+export const onEditChanged = new TypeEvent<boolean>();
+
 function LocalPeerItem() {
   const { localPeerInfo, changeLocalPeerInfo } = useContext(PeerInfoContext);
   const [edit, setEdit] = useState(false);
@@ -89,8 +92,23 @@ function LocalPeerItem() {
   useEffect(() => {
     if (edit) {
       inputRef.current?.focus();
+    } else {
+      cancelEdit();
     }
+    onEditChanged.invoke(edit);
   }, [edit]);
+
+  function cancelEdit() {
+    setEdit(false);
+    setInputName(localPeerInfo.name);
+  }
+
+  useEffect(() => {
+    onEditChanged.addEventListener(setEdit);
+    return () => {
+      onEditChanged.removeEventListener(setEdit);
+    };
+  }, []);
 
   function confirmNewName() {
     setEdit(false);
@@ -185,10 +203,7 @@ function LocalPeerItem() {
                 color: "white",
                 fontWeight: "bold",
               }}
-              onClick={() => {
-                setEdit(false);
-                setInputName(localPeerInfo.name);
-              }}
+              onClick={cancelEdit}
             >
               NO
             </button>

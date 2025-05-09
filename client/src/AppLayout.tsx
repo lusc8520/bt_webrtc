@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { scrollDownEvent } from "./context/ChatMessagesContext.tsx";
 import { util } from "./util/util.ts";
-import { RemotePeerList } from "./chat/RemotePeerList.tsx";
+import { onEditChanged, RemotePeerList } from "./chat/RemotePeerList.tsx";
 import { ChatTab } from "./chat/ChatMessages.tsx";
 import { DrawingBoard } from "./chat/DrawingBoard.tsx";
 import { Game } from "./game/Game.tsx";
@@ -18,6 +18,7 @@ export function AppLayout() {
     if (tabState === "chat") {
       scrollDownEvent.invoke();
     }
+    onEditChanged.invoke(false);
   }, [tabState]);
 
   return (

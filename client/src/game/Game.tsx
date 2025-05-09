@@ -1,4 +1,4 @@
-import { memo, useContext, useEffect } from "react";
+import { memo, useContext, useEffect, useRef } from "react";
 import { PeerInfoContext } from "../context/PeerInfoContext.tsx";
 import { Vectors } from "../types.ts";
 import {
@@ -6,6 +6,7 @@ import {
   GameContext,
   PlayerState,
 } from "../context/GameContext.tsx";
+import { onEditChanged } from "../chat/RemotePeerList.tsx";
 
 const gameFieldSize = GameConstants.gameFieldSize;
 const cellCount = GameConstants.cellCount;
@@ -18,9 +19,11 @@ const gameGrid: number[][] = Array.from({ length: cellCount }, () =>
 export function Game() {
   const { move, remoteStates } = useContext(GameContext);
 
+  const isEdit = useRef<boolean>(false);
+
   useEffect(() => {
     document.onkeydown = (e) => {
-      if (e.repeat) return;
+      if (e.repeat || isEdit.current) return;
       const key = e.key.toLowerCase();
       if (key === "arrowleft" || key === "a") {
         move(Vectors.left);
@@ -32,7 +35,15 @@ export function Game() {
         move(Vectors.down);
       }
     };
+    onEditChanged.addEventListener(onEditChange);
+    return () => {
+      onEditChanged.removeEventListener(onEditChange);
+    };
   }, []);
+
+  function onEditChange(edit: boolean) {
+    isEdit.current = edit;
+  }
 
   return (
     <div
@@ -79,7 +90,7 @@ function LocalPlayer() {
   return (
     <g
       style={{
-        transition: "transform 0.1s",
+        transition: `transform ${GameConstants.moveDuration}ms`,
       }}
       transform={`translate(${pos.x * cellSize + cellSize / 2}, ${pos.y * cellSize + cellSize / 2})`}
     >
@@ -105,14 +116,24 @@ function RemotePlayer({
 }) {
   const pos = state.gridPos;
   const { getPeerInfo } = useContext(PeerInfoContext);
+  const peerInfo = getPeerInfo(peerId);
   return (
     <g
       style={{
-        transition: "transform 0.1s",
+        transition: `transform ${GameConstants.moveDuration}ms`,
       }}
       transform={`translate(${pos.x * cellSize + cellSize / 2}, ${pos.y * cellSize + cellSize / 2})`}
     >
-      <circle r={cellSize / 4} fill={getPeerInfo(peerId).color} />
+      <circle r={cellSize / 4} fill={peerInfo.color} />
+      <text
+        focusable="false"
+        fontSize="2"
+        fill="grey"
+        y="-2"
+        textAnchor="middle"
+      >
+        {peerInfo.name}
+      </text>
     </g>
   );
 }

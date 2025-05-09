@@ -3,7 +3,7 @@
   "type": "module",
   "scripts": {
     "dev-client": "vite",
-    "build": "tsc -b && vite build",
+    "build-client": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

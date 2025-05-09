@@ -17,7 +17,6 @@ expressApp.get("/api/turn", async (req, res) => {
   async function fetchSimulatedTurnConfig(): Promise<RTCIceServer> {
     const apiKey = "some-api-key";
     // use this to fetch credentials from turn service ...
-    console.log(apiKey);
     await wait(50);
     // return simulated turn credentials
     return {
