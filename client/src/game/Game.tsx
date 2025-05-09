@@ -17,24 +17,29 @@ const gameGrid: number[][] = Array.from({ length: cellCount }, () =>
 );
 
 export function Game() {
-  const { move, remoteStates } = useContext(GameContext);
+  const { move, remoteStates, shoot, localProjectiles, remoteProjectiles } =
+    useContext(GameContext);
 
+  const { localPeerInfo } = useContext(PeerInfoContext);
   const isEdit = useRef<boolean>(false);
 
+  document.onkeydown = (e) => {
+    if (e.repeat || isEdit.current) return;
+    const key = e.key.toLowerCase();
+    if (key === "arrowleft" || key === "a") {
+      move(Vectors.left);
+    } else if (key === "arrowright" || key === "d") {
+      move(Vectors.right);
+    } else if (key === "arrowup" || key === "w") {
+      move(Vectors.up);
+    } else if (key === "arrowdown" || key === "s") {
+      move(Vectors.down);
+    } else if (key === " ") {
+      shoot();
+    }
+  };
+
   useEffect(() => {
-    document.onkeydown = (e) => {
-      if (e.repeat || isEdit.current) return;
-      const key = e.key.toLowerCase();
-      if (key === "arrowleft" || key === "a") {
-        move(Vectors.left);
-      } else if (key === "arrowright" || key === "d") {
-        move(Vectors.right);
-      } else if (key === "arrowup" || key === "w") {
-        move(Vectors.up);
-      } else if (key === "arrowdown" || key === "s") {
-        move(Vectors.down);
-      }
-    };
     onEditChanged.addEventListener(onEditChange);
     return () => {
       onEditChanged.removeEventListener(onEditChange);
@@ -77,6 +82,30 @@ export function Game() {
             return <RemotePlayer key={id} peerId={id} state={state} />;
           })}
           <LocalPlayer />
+          {localProjectiles.map((proj) => {
+            return (
+              <g
+                key={`${proj.gridPos.x}${proj.gridPos.y}`}
+                transform={`translate(${proj.gridPos.x * cellSize}, ${proj.gridPos.y * cellSize})`}
+              >
+                <rect
+                  width={cellSize}
+                  height={cellSize}
+                  fill={localPeerInfo.color}
+                />
+              </g>
+            );
+          })}
+          {[...remoteProjectiles].map((proj, index) => {
+            return (
+              <g
+                key={index}
+                transform={`translate(${proj.gridPos.x * cellSize}, ${proj.gridPos.y * cellSize})`}
+              >
+                <rect width={cellSize} height={cellSize} fill="white" />
+              </g>
+            );
+          })}
         </svg>
       </div>
     </div>

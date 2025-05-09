@@ -52,6 +52,27 @@ export const Vectors = {
     x: 0,
     y: -1,
   },
+  getRandomDir: () => {
+    const n = getRandomInt(3);
+    switch (n) {
+      case 0:
+        return Vectors.right;
+      case 1:
+        return Vectors.down;
+      case 2:
+        return Vectors.up;
+      case 3:
+        return Vectors.down;
+      default:
+        return Vectors.right;
+    }
+  },
+  add: (vec1: Vector2, vec2: Vector2) => {
+    return {
+      x: vec1.x + vec2.x,
+      y: vec1.y + vec2.y,
+    };
+  },
   equals: (vec1: Vector2, vec2: Vector2) => {
     return vec1.x === vec2.x && vec1.y === vec2.y;
   },

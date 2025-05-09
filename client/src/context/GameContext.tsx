@@ -19,6 +19,9 @@ type GameContextProps = {
   localState: LocalPlayerState;
   remoteStates: Map<number, PlayerState>;
   move: (dir: Vector2) => void;
+  shoot: () => void;
+  localProjectiles: Projectile[];
+  remoteProjectiles: Set<Projectile>;
 };
 
 export type PlayerState = {
@@ -27,27 +30,32 @@ export type PlayerState = {
 
 export type LocalPlayerState = {
   isMoving: boolean;
+  canDie: boolean;
 } & PlayerState;
+
+type Projectile = {
+  dir: Vector2;
+  gridPos: Vector2;
+};
 
 export abstract class GameConstants {
   static gameFieldSize = 100;
   static cellCount = 15;
   static moveDuration = 100;
-  // static cellSize = GameConstants.gameFieldSize / GameConstants.cellCount;
-  //
-  // static gameGrid: number[][] = Array.from(
-  //   { length: GameConstants.cellCount },
-  //   () => Array(GameConstants.cellCount).fill(0),
-  // );
+  static projectileMoveDuration = 300;
 }
 
 export const GameContext = createContext<GameContextProps>({
   localState: {
     gridPos: { x: 0, y: 0 },
     isMoving: false,
+    canDie: false,
   },
   remoteStates: new Map(),
   move: () => {},
+  shoot: () => {},
+  localProjectiles: [],
+  remoteProjectiles: new Set(),
 });
 
 export function GameContextProvider({ children }: { children: ReactNode }) {
@@ -56,17 +64,28 @@ export function GameContextProvider({ children }: { children: ReactNode }) {
   const [localState, setLocalState] = useState<LocalPlayerState>({
     gridPos: util.getRandomVector2(GameConstants.cellCount),
     isMoving: false,
+    canDie: false,
   });
 
+  const [localProjectile, setLocalProjectile] = useState<
+    Projectile | undefined
+  >(undefined);
+  const [localProjectiles, setLocalProjectiles] = useState<Projectile[]>([]);
+
   const localStateRef = useRef<LocalPlayerState>(localState);
+  const localProjectileRef = useRef<Projectile | undefined>(localProjectile);
 
   const [remoteStates, setRemoteStates] = useState<Map<number, PlayerState>>(
     new Map(),
   );
+  const [remoteProjectiles, setRemoteProjectiles] = useState<Set<Projectile>>(
+    new Set(),
+  );
 
   useEffect(() => {
     localStateRef.current = localState;
-  }, [localState]);
+    localProjectileRef.current = localProjectile;
+  }, [localState, localProjectile]);
 
   useEffect(() => {
     startGame();
@@ -79,12 +98,63 @@ export function GameContextProvider({ children }: { children: ReactNode }) {
     broadCast("reliable", { pType: "game", gameMessage: msg });
   }
 
+  function shoot() {
+    const dir = Vectors.getRandomDir();
+    const proj: Projectile = {
+      dir: dir,
+      gridPos: {
+        x: util.clamp(
+          localState.gridPos.x + dir.x,
+          0,
+          GameConstants.cellCount - 1,
+        ),
+        y: util.clamp(
+          localState.gridPos.y + dir.y,
+          0,
+          GameConstants.cellCount - 1,
+        ),
+      },
+    };
+    broadCastGameMessage({ type: "proj", proj: proj });
+    setLocalProjectile(proj);
+    setLocalProjectiles([proj]);
+    const t = setInterval(() => {
+      const projChanged = localProjectileRef.current !== proj;
+      if (projChanged) {
+        clearInterval(t);
+      } else {
+        const newPos = Vectors.add(proj.gridPos, proj.dir);
+        if (
+          newPos.x < 0 ||
+          newPos.y < 0 ||
+          newPos.x >= GameConstants.cellCount ||
+          newPos.y >= GameConstants.cellCount
+        ) {
+          // proj is out of bounds
+          clearInterval(t);
+          setLocalProjectile(undefined);
+          setLocalProjectiles([]);
+        } else {
+          proj.gridPos = newPos;
+          setLocalProjectiles([proj]);
+        }
+      }
+      console.error("hi");
+    }, GameConstants.projectileMoveDuration);
+    console.error("shoot");
+  }
+
   function startGame() {
     onMessage.addEventListener(handleMessage);
     broadCastGameMessage({
       type: "init",
       position: localState.gridPos,
     });
+    setTimeout(() => {
+      setLocalState((prev) => {
+        return { ...prev, canDie: true };
+      });
+    }, 3000);
   }
 
   function handleMessage({
@@ -160,7 +230,34 @@ export function GameContextProvider({ children }: { children: ReactNode }) {
           gridPos: newPos,
         };
       });
+    } else if (message.type === "proj") {
+      const projectile = message.proj;
+      setRemoteProjectiles((prev) => {
+        return new Set(prev).add(projectile);
+      });
+      const interval = setInterval(() => {
+        setRemoteProjectiles((prev) => {
+          if (!prev.has(projectile)) {
+            clearInterval(interval);
+            return prev;
+          }
+          projectile.gridPos = Vectors.add(projectile.gridPos, projectile.dir);
+          if (isOutOfBounds(projectile.gridPos)) {
+            prev.delete(projectile);
+          }
+          return new Set(prev);
+        });
+      }, GameConstants.projectileMoveDuration);
     }
+  }
+
+  function isOutOfBounds(pos: Vector2): boolean {
+    return (
+      pos.x < 0 ||
+      pos.y < 0 ||
+      pos.x >= GameConstants.cellCount ||
+      pos.y >= GameConstants.cellCount
+    );
   }
 
   function exitGame() {
@@ -196,7 +293,16 @@ export function GameContextProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <GameContext.Provider value={{ remoteStates, localState, move }}>
+    <GameContext.Provider
+      value={{
+        remoteStates,
+        localState,
+        move,
+        shoot,
+        localProjectiles,
+        remoteProjectiles,
+      }}
+    >
       {children}
     </GameContext.Provider>
   );
@@ -213,4 +319,8 @@ export type GameMessage =
   | {
       type: "move";
       direction: Vector2;
+    }
+  | {
+      type: "proj";
+      proj: Projectile;
     };
