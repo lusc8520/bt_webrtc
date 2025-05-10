@@ -5,7 +5,7 @@ import { onEditChanged, RemotePeerList } from "./chat/RemotePeerList.tsx";
 import { ChatTab } from "./chat/ChatMessages.tsx";
 import { DrawingBoard } from "./chat/DrawingBoard.tsx";
 import { Game } from "./game/Game.tsx";
-import { GameContextProvider } from "./context/GameContext.tsx";
+import { GameConstants, GameContextProvider } from "./context/GameContext.tsx";
 
 type TabState = "chat" | "draw" | "game";
 
@@ -20,6 +20,17 @@ export function AppLayout() {
     }
     onEditChanged.invoke(false);
   }, [tabState]);
+
+  useEffect(() => {
+    GameConstants.onDie.addEventListener(onDie);
+    return () => {
+      GameConstants.onDie.removeEventListener(onDie);
+    };
+  }, []);
+
+  function onDie() {
+    setTabState("chat");
+  }
 
   return (
     <div

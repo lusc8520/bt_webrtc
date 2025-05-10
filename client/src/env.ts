@@ -1,9 +1,9 @@
-export abstract class Env {
-  static baseUrl = import.meta.env.DEV
-    ? "http://localhost:3000"
-    : "https://shuneman.net";
+const isDev = import.meta.env.DEV;
 
-  static wsBaseUrl = import.meta.env.DEV
+export abstract class Env {
+  static baseUrl = isDev ? "http://localhost:3000" : "https://shuneman.net";
+
+  static wsBaseUrl = isDev
     ? "http://localhost:3000"
     : "https://shuneman.net/ws";
 }

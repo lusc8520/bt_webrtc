@@ -1,12 +1,14 @@
-import { memo, useContext, useEffect, useRef } from "react";
+import { memo, useContext, useEffect, useRef, useState } from "react";
 import { PeerInfoContext } from "../context/PeerInfoContext.tsx";
 import { Vectors } from "../types.ts";
 import {
   GameConstants,
   GameContext,
+  GameContextProvider,
   PlayerState,
 } from "../context/GameContext.tsx";
 import { onEditChanged } from "../chat/RemotePeerList.tsx";
+import { util } from "../util/util.ts";
 
 const gameFieldSize = GameConstants.gameFieldSize;
 const cellCount = GameConstants.cellCount;
@@ -17,8 +19,14 @@ const gameGrid: number[][] = Array.from({ length: cellCount }, () =>
 );
 
 export function Game() {
-  const { move, remoteStates, shoot, localProjectiles, remoteProjectiles } =
-    useContext(GameContext);
+  const {
+    move,
+    remoteStates,
+    shoot,
+    localProjectiles,
+    remoteProjectiles,
+    localState,
+  } = useContext(GameContext);
 
   const { localPeerInfo } = useContext(PeerInfoContext);
   const isEdit = useRef<boolean>(false);
@@ -26,18 +34,39 @@ export function Game() {
   document.onkeydown = (e) => {
     if (e.repeat || isEdit.current) return;
     const key = e.key.toLowerCase();
-    if (key === "arrowleft" || key === "a") {
+    if (key === "a") {
       move(Vectors.left);
-    } else if (key === "arrowright" || key === "d") {
+    } else if (key === "d") {
       move(Vectors.right);
-    } else if (key === "arrowup" || key === "w") {
+    } else if (key === "w") {
       move(Vectors.up);
-    } else if (key === "arrowdown" || key === "s") {
+    } else if (key === "s") {
       move(Vectors.down);
-    } else if (key === " ") {
-      shoot();
+    } else if (key === "arrowleft") {
+      shoot(Vectors.left);
+    } else if (key === "arrowright") {
+      shoot(Vectors.right);
+    } else if (key === "arrowup") {
+      shoot(Vectors.up);
+    } else if (key === "arrowdown") {
+      shoot(Vectors.down);
     }
   };
+
+  const [isCooldown, setIsCoolDown] = useState(localState.canShoot);
+  const [cooldownColor, setCooldownColor] = useState<"green" | "red">(
+    localState.canShoot ? "green" : "red",
+  );
+
+  useEffect(() => {
+    if (!localState.canShoot) {
+      setIsCoolDown(true);
+      setCooldownColor("red");
+    } else {
+      setIsCoolDown(false);
+      setCooldownColor("green");
+    }
+  }, [localState]);
 
   useEffect(() => {
     onEditChanged.addEventListener(onEditChange);
@@ -48,6 +77,15 @@ export function Game() {
 
   function onEditChange(edit: boolean) {
     isEdit.current = edit;
+  }
+
+  function getCoolDownWidth() {
+    if (isCooldown) {
+      return "100%";
+    } else {
+      if (localState.canShoot) return "100%";
+      return "0%";
+    }
   }
 
   return (
@@ -62,51 +100,93 @@ export function Game() {
     >
       <div
         style={{
-          height: "100%",
-          width: "100%",
           display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
+          flexDirection: "column",
+          padding: "0.25rem",
+          gap: "0.25rem",
         }}
       >
-        <svg
-          className="noselect"
-          viewBox={`0 0 ${gameFieldSize} ${gameFieldSize}`}
+        <div style={{ textAlign: "center" }}>
+          use WASD to move and use arrow keys to shoot (you can shoot once a
+          second)
+        </div>
+        <div
+          style={{ display: "flex", justifyContent: "center", gap: "0.5rem" }}
+        >
+          <div>shoot cooldown:</div>
+          <div
+            style={{
+              borderStyle: "solid",
+              borderWidth: "0.1px",
+              width: "3rem",
+              borderRadius: `${util.borderColor}`,
+              display: "flex",
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: cooldownColor,
+                width: getCoolDownWidth(),
+                transition: `${isCooldown ? `width ${GameConstants.shootCooldown}ms` : ""}`,
+              }}
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          flexGrow: "1",
+          overflow: "hidden",
+        }}
+      >
+        <div
           style={{
-            display: "block",
-            maxHeight: "100%",
+            height: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
-          <GameGrid />
-          {[...remoteStates].map(([id, state]) => {
-            return <RemotePlayer key={id} peerId={id} state={state} />;
-          })}
-          <LocalPlayer />
-          {localProjectiles.map((proj) => {
-            return (
-              <g
-                key={`${proj.gridPos.x}${proj.gridPos.y}`}
-                transform={`translate(${proj.gridPos.x * cellSize}, ${proj.gridPos.y * cellSize})`}
-              >
-                <rect
-                  width={cellSize}
-                  height={cellSize}
-                  fill={localPeerInfo.color}
-                />
-              </g>
-            );
-          })}
-          {[...remoteProjectiles].map((proj, index) => {
-            return (
-              <g
-                key={index}
-                transform={`translate(${proj.gridPos.x * cellSize}, ${proj.gridPos.y * cellSize})`}
-              >
-                <rect width={cellSize} height={cellSize} fill="white" />
-              </g>
-            );
-          })}
-        </svg>
+          <svg
+            className="noselect"
+            viewBox={`0 0 ${gameFieldSize} ${gameFieldSize}`}
+            style={{
+              display: "block",
+              maxHeight: "100%",
+            }}
+          >
+            <GameGrid />
+            {[...remoteStates].map(([id, state]) => {
+              return <RemotePlayer key={id} peerId={id} state={state} />;
+            })}
+            <LocalPlayer />
+            {[...localProjectiles].map((proj, index) => {
+              return (
+                <g
+                  key={index}
+                  transform={`translate(${proj.gridPos.x * cellSize}, ${proj.gridPos.y * cellSize})`}
+                >
+                  <rect
+                    width={cellSize}
+                    height={cellSize}
+                    fill={localPeerInfo.color}
+                  />
+                </g>
+              );
+            })}
+            {[...remoteProjectiles].map((proj, index) => {
+              return (
+                <g
+                  key={index}
+                  transform={`translate(${proj.gridPos.x * cellSize}, ${proj.gridPos.y * cellSize})`}
+                >
+                  <rect width={cellSize} height={cellSize} fill="white" />
+                </g>
+              );
+            })}
+          </svg>
+        </div>
       </div>
     </div>
   );
