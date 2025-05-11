@@ -4,7 +4,6 @@ import { Vectors } from "../types.ts";
 import {
   GameConstants,
   GameContext,
-  GameContextProvider,
   PlayerState,
 } from "../context/GameContext.tsx";
 import { onEditChanged } from "../chat/RemotePeerList.tsx";

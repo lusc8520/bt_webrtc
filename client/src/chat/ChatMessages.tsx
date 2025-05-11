@@ -21,9 +21,14 @@ export function ChatMessages() {
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       {messages.map((message, index) => {
         if (message.type === "local") {
-          return <LocalMessage key={index} message={message} />;
+          return <LocalMessage key={message.id} message={message} />;
         } else {
-          return <RemoteMessage key={index} message={message} />;
+          return (
+            <RemoteMessage
+              key={`${message.peer.remotePeerId}-${message.id}`}
+              message={message}
+            />
+          );
         }
       })}
     </div>
