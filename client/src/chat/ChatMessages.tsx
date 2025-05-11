@@ -19,7 +19,7 @@ export function ChatMessages() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-      {messages.map((message, index) => {
+      {messages.map((message) => {
         if (message.type === "local") {
           return <LocalMessage key={message.id} message={message} />;
         } else {
