@@ -274,7 +274,6 @@ export function GameContextProvider({ children }: { children: ReactNode }) {
   }
 
   function exitGame() {
-    broadCastGameMessage({ type: "dc" });
     onMessage.removeEventListener(handleMessage);
   }
 
